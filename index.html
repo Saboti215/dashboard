@@ -1,11 +1,50 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <link rel="shortcut icon" href="assets/dashboard.svg">
+        <script src="https://apis.google.com/js/api.js"></script>
         <script src="src/jquery-3.5.1.min.js"></script>
         <script src="src/jquery-ui/jquery-ui.min.js"></script>
         <script src="src/dashboard.js"></script>
+        <link rel="stylesheet" href="src/dashboard.css">
         <title>Dashboard</title>
     </head>
     <body>
+        <div id="dashboard">
+            <div class="container">
+                <a href="https://calendar.google.com/calendar/b/0/r">
+                    <div class="head">
+                        Kalender
+                    </div>
+                </a>
+                <div class="content">
+                    <iframe src="https://calendar.google.com/calendar/embed?height=770&amp;wkst=2&amp;bgcolor=%23ffffff&amp;ctz=Europe%2FBerlin&amp;src=c2NobG9lc3NlcnRvYmlAZ21haWwuY29t&amp;src=am1kaXRzOWU4ZmhidjNzMmkxMGxvYTg0Z3NAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=NzdrM3FiNWJhYmdranB1azg5ZzBwc2dkNzRAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=OWpjM2ltcXVuZzJtcjJhZGY4bjVjMXByaTRAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=YWRkcmVzc2Jvb2sjY29udGFjdHNAZ3JvdXAudi5jYWxlbmRhci5nb29nbGUuY29t&amp;src=NjNodmtwaGZlc3RsYWlocG1yaWlvM3N2b29AZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=OGliOWVtZHU1OHRjMDBjcW1oMmNzOWdjajBAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=NG82ZmtycGcxZ2MzajJjYzRkYmRuNDdxdDhAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=aXZocWpjcjZvYzkyb3Axb2JoY2h2NWg1OWtAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=MXVlN3A5MjRmNW8wbnFrZHNrM2dhOWs2MjhAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=NTg5dTFtOGt1bDJsM2pxNmRpb3BuN3M0N3NAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=dDhiYjkyYWxmMGFnM3Nrb2hqMTg3OHVodHNAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=cW50ZDVzNHV1MDFqYW10ZDZpczhzcGMydHNAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=c29pZHZpMG05a282OXZuZjFqNHNoNzU1aGdAZ3JvdXAuY2FsZW5kYXIuZ29vZ2xlLmNvbQ&amp;src=ZGUuZ2VybWFuI2hvbGlkYXlAZ3JvdXAudi5jYWxlbmRhci5nb29nbGUuY29t&amp;color=%23039BE5&amp;color=%238E24AA&amp;color=%23616161&amp;color=%23A79B8E&amp;color=%237986CB&amp;color=%23F6BF26&amp;color=%23D50000&amp;color=%23B39DDB&amp;color=%23AD1457&amp;color=%23795548&amp;color=%23009688&amp;color=%23A79B8E&amp;color=%23A79B8E&amp;color=%23A79B8E&amp;color=%23009688&amp;showNav=0&amp;showTitle=0&amp;showDate=0&amp;showPrint=0&amp;showTabs=0&amp;showTz=0&amp;mode=WEEK&amp;showCalendars=0" style="border-width:0" width="550" height="770" frameborder="0" scrolling="no"></iframe>
+                </div>
+            </div>
+            <div class="container">
+                <a href="https://www.meistertask.com/app/dashboard">
+                    <div class="head">
+                        ToDo
+                        <span id="task-counter" class="counter"></span>
+                    </div>
+                </a>
+                <div class="content" id="todo-wrapper">
+                    
+                </div>
+            </div>
+            <div class="container">
+                <div class="content" id="clock-wrapper">
+                    
+                </div>
+            </div>
+            <div class="container">
+                <div class="content" id="apps-wrapper">
+                    <a href="https://codeclub.de" data-name="CodeClubMG" style="background-image: url(/assets/app_icons/codeclub.png);"></a>
+                    <a href="https://github.com" data-name="GitHub" style="background-image: url(/assets/app_icons/github.png);"></a>
+                    <a href="https://moodle.hsnr.de/login/index.php" data-name="Moodle" style="background-image: url(/assets/app_icons/moodle.png);"></a>
+                    <a href="https://www.typingclub.com/sportal/" data-name="TypingClub" style="background-image: url(/assets/app_icons/typingclub.jpg);"></a>
+                </div>
+            </div>
+        </div>
     </body>
 </html>

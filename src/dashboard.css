@@ -1,0 +1,227 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap');
+
+:root{
+    --dark: #2c393f;
+    --light: #00c7c7;
+    --gray: #ededed;
+    --white: #ffffff;
+}
+
+body{
+    margin: 0;
+    font-family: Roboto;
+}
+
+#dashboard{
+    width: calc( 100vw - 100px );
+    height: calc( 100vh - 100px);
+    padding: 50px;
+    display: grid;
+    grid-template-columns: 35% 35% calc( 30% - 60px );
+    grid-template-rows: 30% calc( 70% - 50px );
+    column-gap: 30px;
+    row-gap: 50px;
+    background-color: var(--white);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}   
+
+#dashboard .container:nth-of-type(1){
+    grid-column-start: 1;
+    grid-column-end: 1;
+    grid-row-start: 1;
+    grid-row-end: 3;
+}
+#dashboard .container:nth-of-type(2){
+    grid-column-start: 2;
+    grid-column-end: 2;
+    grid-row-start: 1;
+    grid-row-end: 3;
+}
+#dashboard .container:nth-of-type(3){
+    grid-column-start: 3;
+    grid-column-end: 3;
+    grid-row-start: 1;
+    grid-row-end: 2;
+}
+#dashboard .container:nth-of-type(4){
+    grid-column-start: 3;
+    grid-column-end: 3;
+    grid-row-start: 2;
+    grid-row-end: 3;
+}
+
+#dashboard .container{
+    background-color: #ffffffaa;
+    overflow: hidden;
+}
+
+#dashboard .container > div{
+    width: 100%;
+}
+
+#dashboard .container .head{
+    height: 30px;
+    width: calc( 100% - 60px );
+    padding: 15px 30px;
+    border-bottom: 1px solid #000000;
+    font-size: 30px;
+    line-height: 1;
+    position: relative;
+    color: var(--dark);
+}
+
+#dashboard .container .head:hover{
+    background: #ffffff44;
+}
+
+#dashboard a{
+    text-decoration: none !important
+}
+
+#dashboard .container .head .counter{
+    background-color: var(--light);
+    border-radius: 50%;
+    padding: 7px;
+    font-size: 12px;
+    color: var(--white);
+    position: absolute;
+    right: 30px;
+    top: 18px;
+}
+
+#dashboard .container .head .counter:empty{
+    display: none;
+}
+
+#dashboard .container .content{
+    height: calc( 100% - 90px);
+    width: calc( 100% - 60px );
+    padding: 15px 30px;
+    overflow-y: auto;
+}
+
+#todo-wrapper > div.task{
+    width: calc( 100% - 30px );
+    height: fit-content;
+    background: var(--white);
+    margin: 15px 0;
+    padding: 10px 15px 20px;
+    position: relative;
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
+#todo-wrapper > div.task.has-desc{
+    cursor: pointer;
+}
+
+#todo-wrapper > div.task.has-desc::after{
+    content: "⇾";
+    position: absolute;
+    top: 5px;
+    right: 10px;
+}
+
+#todo-wrapper > div.task.has-desc.active::after{
+    transform: rotate(90deg);
+}
+
+#todo-wrapper > div.task-project-headline{
+    width: calc( 100% - 30px) ;
+    height: 20px;
+    margin: 60px 0 15px;
+    background: var(--white);
+    padding: 10px 15px 15px;
+    font-size: 20px;
+    background: var(--light);
+    color: var(--white);
+    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
+#todo-wrapper > div.task-project-headline:first-of-type{
+    margin-top: 15px;
+}
+
+#todo-wrapper .task:not(.active) .task-desc{
+    display: none;
+}
+
+#todo-wrapper .task.active .task-desc{
+    font-size: 13px;
+    margin-left: 30px;
+}
+
+#todo-wrapper .task-labels{
+    margin-bottom: 10px;
+}
+
+#todo-wrapper .task-labels span:first-of-type{ margin-left: 0; }
+#todo-wrapper .task-labels span:last-of-type{ margin-right: 0; }
+
+#todo-wrapper .task-labels span{
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 10px;
+    margin: 5px;
+    color: var(--white);
+}
+
+#todo-wrapper span.task-deadline{
+    color: var(--dark);
+    font-size: 12px;
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+}
+
+#clock-wrapper{
+    text-align: center;
+    padding-top: 70px !important;
+}
+
+#clock-time{
+    font-size: 60px;
+}
+
+#clock-date{
+    font-size: 20px;
+}
+
+#apps-wrapper{
+    display: grid;
+    grid-template-columns: repeat(4, 70px);
+    grid-template-rows: repeat(5, 70px);
+    row-gap: 40px;
+    column-gap: calc( (100% - 4 * 70px) / 3 );
+}
+
+#apps-wrapper > a{
+    width: 70px;
+    height: 70px;
+    background-color: var(--white);
+    display: block;
+    position: relative;
+    border-radius: 50%;
+    background-size: 60px;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background-size .2s ease;
+}
+
+#apps-wrapper > a:hover{
+    background-size: 70px;
+}
+
+#apps-wrapper > a:after{
+    content: attr(data-name);
+    position: absolute;
+    bottom: -20px;
+    font-size: 12px;
+    width: 70px;
+    color: var(--dark);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    text-align: center;
+}
