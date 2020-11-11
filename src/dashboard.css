@@ -121,6 +121,7 @@ body{
     position: absolute;
     top: 5px;
     right: 10px;
+    transition: transform .2s ease;
 }
 
 #todo-wrapper > div.task.has-desc.active::after{
