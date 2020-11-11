@@ -16,6 +16,17 @@ body{
     background-position: center;
     background-repeat: no-repeat;
     min-height: 100vh;
+    position: relative;
+}
+
+body:after{
+    content: "© Tobias Schlößer 2020";
+    position: fixed;
+    bottom: 10px;
+    right: 20px;
+    font-size: 10px;
+    color: var(--white);
+    font-family: Consolas;
 }
 
 #dashboard{
@@ -202,7 +213,7 @@ body{
     background-color: var(--white);
     display: block;
     position: relative;
-    border-radius: 50%;
+    border-radius: 20px;
     background-size: 60px;
     background-position: center;
     background-repeat: no-repeat;
