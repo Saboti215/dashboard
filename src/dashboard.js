@@ -13,7 +13,7 @@ $(document).ready(() => {
 
 function loadClock(){
     window.setInterval(() => {
-        $("#clock-wrapper").html(getClock());
+        $("#clock").html(getClock());
     }, 1000);
 }
 
@@ -32,9 +32,7 @@ function loadBackground(){
     $.getJSON(url, data => {
         if (parseInt(data.hits.length) > 0){
             const n = getRandomInt(3, data.hits.length-1);
-            $("#dashboard")
-                .css("background-image", `url(${data.hits[n].largeImageURL})`)
-                .removeClass("hidden");
+            $(document.body).css("background-image", `url(${data.hits[n].largeImageURL})`);
         }else
             console.warn('No background image found');
     });

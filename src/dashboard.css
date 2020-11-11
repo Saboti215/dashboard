@@ -10,46 +10,27 @@
 body{
     margin: 0;
     font-family: Roboto;
-}
-
-#dashboard{
-    width: calc( 100vw - 100px );
-    height: calc( 100vh - 100px);
-    padding: 50px;
-    display: grid;
-    grid-template-columns: 35% 35% calc( 30% - 60px );
-    grid-template-rows: 30% calc( 70% - 50px );
-    column-gap: 30px;
-    row-gap: 50px;
+    overflow-x: hidden;
     background-color: var(--white);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    min-height: 100vh;
+}
+
+#dashboard{
+    padding: 50px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, 390px);
+    grid-template-rows: repeat(auto-fit, 200px 370px);
+    column-gap: 30px;
+    row-gap: 50px;
+    justify-content: center;
 }   
 
-#dashboard .container:nth-of-type(1){
-    grid-column-start: 1;
-    grid-column-end: 1;
-    grid-row-start: 1;
-    grid-row-end: 3;
-}
+#dashboard .container:nth-of-type(1),
 #dashboard .container:nth-of-type(2){
-    grid-column-start: 2;
-    grid-column-end: 2;
-    grid-row-start: 1;
-    grid-row-end: 3;
-}
-#dashboard .container:nth-of-type(3){
-    grid-column-start: 3;
-    grid-column-end: 3;
-    grid-row-start: 1;
-    grid-row-end: 2;
-}
-#dashboard .container:nth-of-type(4){
-    grid-column-start: 3;
-    grid-column-end: 3;
-    grid-row-start: 2;
-    grid-row-end: 3;
+    grid-row: span 2;
 }
 
 #dashboard .container{
@@ -96,10 +77,17 @@ body{
 }
 
 #dashboard .container .content{
-    height: calc( 100% - 90px);
-    width: calc( 100% - 60px );
-    padding: 15px 30px;
     overflow-y: auto;
+}
+
+#todo-wrapper{
+    height: calc( 100% - 90px );
+}
+
+#todo-wrapper,
+#apps-wrapper{
+    width: calc( 100% - 60px ) !important;
+    padding: 15px 30px;
 }
 
 #todo-wrapper > div.task{
@@ -178,7 +166,16 @@ body{
 
 #clock-wrapper{
     text-align: center;
-    padding-top: 70px !important;
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+#clock{
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    position: absolute;
 }
 
 #clock-time{
@@ -191,10 +188,11 @@ body{
 
 #apps-wrapper{
     display: grid;
-    grid-template-columns: repeat(4, 70px);
-    grid-template-rows: repeat(5, 70px);
+    grid-template-columns: repeat(auto-fit, 70px);
+    grid-template-rows: repeat(auto-fit, 80px);
     row-gap: 40px;
-    column-gap: calc( (100% - 4 * 70px) / 3 );
+    column-gap: 10px;
+    justify-items: center;
 }
 
 #apps-wrapper > a{
@@ -208,6 +206,7 @@ body{
     background-position: center;
     background-repeat: no-repeat;
     transition: background-size .2s ease;
+    margin-bottom: 10px;
 }
 
 #apps-wrapper > a:hover{
