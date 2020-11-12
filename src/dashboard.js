@@ -9,6 +9,7 @@ $(document).ready(() => {
     loadCalendar();
     loadTasks();
     loadClock();
+    loadCsAutoLogin();
 });
 
 function loadCalendar(){
@@ -109,15 +110,17 @@ async function loadTasks(){
 
 }
 
-function loginCS(){
-    const form = `<form id="cs-login-form" action="https://codeclub.de/internal/?page=login" method="post" style="display: none;">
-        <input name="login[userName]" value="${CS_USERNAME}">
-        <input name="login[password]" value="${CS_PASSWORD}">
-        <input name="login[returnPage]" value="https://codeclub.de">
-    </form>`;
+function loadCsAutoLogin(){
+    $("a[data-name=CodingSpace]").on("click", () => {
+        const form = `<form id="cs-login-form" action="https://codeclub.de/internal/?page=login" method="post" style="display: none;">
+            <input name="login[userName]" value="${CS_USERNAME}">
+            <input name="login[password]" value="${CS_PASSWORD}">
+            <input name="login[returnPage]" value="https://codeclub.de">
+        </form>`;
 
-    $(document.body).append(form);
-    $("form#cs-login-form").submit();
+        $(document.body).append(form);
+        $("form#cs-login-form").submit();
+    });
 }
 
 function getRandomInt(min, max) {
