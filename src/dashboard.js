@@ -1,5 +1,4 @@
-const PIXABAY_API_KEY = '19070084-2bd82541ac44e87df591e85c4';
-const MASTER_TASK_API_KEY = 'e33470187517078b63a549d69cfb0b8bec2061d4ed62a8f36f3e51df10a6bdc5';
+
 
 let taskLabels = null;
 
@@ -7,9 +6,14 @@ $(document).ready(() => {
 
     // Background
     loadBackground();
+    loadCalendar();
     loadTasks();
     loadClock();
 });
+
+function loadCalendar(){
+    $("#calendar-frame").attr("src", CALENDER_URL);
+}
 
 function loadClock(){
     window.setInterval(() => {
@@ -106,12 +110,9 @@ async function loadTasks(){
 }
 
 function loginCS(){
-    console.log("t");
-    const userName = "TobiasSc";
-    const password = "JJPsjsrk";
     const form = `<form id="cs-login-form" action="https://codeclub.de/internal/?page=login" method="post" style="display: none;">
-        <input name="login[userName]" value="${userName}">
-        <input name="login[password]" value="${password}">
+        <input name="login[userName]" value="${CS_USERNAME}">
+        <input name="login[password]" value="${CS_PASSWORD}">
         <input name="login[returnPage]" value="https://codeclub.de">
     </form>`;
 
