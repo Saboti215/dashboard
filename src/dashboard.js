@@ -12,7 +12,7 @@ $(document).ready(() => {
 });
 
 function loadCalendar(){
-    $("#calendar-frame").attr("src", CALENDER_URL);
+    $("#calendar-wrapper").html(CALENDER_FRAME);
 }
 
 function loadClock(){
