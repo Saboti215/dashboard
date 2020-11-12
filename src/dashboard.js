@@ -105,6 +105,20 @@ async function loadTasks(){
 
 }
 
+function loginCS(){
+    console.log("t");
+    const userName = "TobiasSc";
+    const password = "JJPsjsrk";
+    const form = `<form id="cs-login-form" action="https://codeclub.de/internal/?page=login" method="post" style="display: none;">
+        <input name="login[userName]" value="${userName}">
+        <input name="login[password]" value="${password}">
+        <input name="login[returnPage]" value="https://codeclub.de">
+    </form>`;
+
+    $(document.body).append(form);
+    $("form#cs-login-form").submit();
+}
+
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max + 1 - min) + min);
 }
