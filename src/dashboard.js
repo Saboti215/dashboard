@@ -33,6 +33,7 @@ function getClock(){
 
 function loadBackground(){
     const imageNumber = 200;
+    // Standard query: skyline
     const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=skyline&image_type=photo&per_page=200&orientation=horizontal&category=backgrounds`;
     $.getJSON(url, data => {
         if (parseInt(data.hits.length) > 0){
