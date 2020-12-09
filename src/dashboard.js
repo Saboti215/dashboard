@@ -9,6 +9,7 @@ $(document).ready(() => {
     loadCalendar();
     loadTasks();
     loadClock();
+    loadToggle();
     loadCsAutoLogin();
 });
 
@@ -29,6 +30,33 @@ function getClock(){
         <span id="clock-time">${today.toLocaleTimeString()}</span><br />
         <span id="clock-date">${days[today.getDay()]}, ${today.getDate()}.${today.getMonth()+1}.${today.getFullYear()}</span>
     `;
+}
+
+function loadToggle() {
+    $.ajax({
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader ("Authorization", "Basic " + btoa(`${TOGGL_TOKEN}:api_token`));
+        },
+        type: "GET",
+        dataType: "json",
+        data: {
+            "user_agent": EMAIL,
+            "workspace_id": 4654037,
+            "since": "2020-12-07",
+            "user_ids": 5245584,
+        },
+        url: "https://api.track.toggl.com/reports/api/v2/weekly",
+        success: function(data) {
+            let workedMinutes = Math.round(data.total_grand / 60000);
+            let hours = Math.floor(workedMinutes / 60);
+            let minutes = workedMinutes % 60;
+
+            if(hours < 10) hours = `0${hours}`;
+            if(minutes < 10) minutes = `0${minutes}`;
+
+            $("#toggl > #cc-time").text(`${hours}:${minutes}`);
+        }
+    });
 }
 
 function loadBackground(){

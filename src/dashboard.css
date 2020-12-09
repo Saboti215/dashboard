@@ -198,6 +198,12 @@ body:after{
     font-size: 20px;
 }
 
+#toggl{
+    width: 100%;
+    position: absolute;
+    bottom: 10px;
+}
+
 #apps-wrapper{
     display: grid;
     grid-template-columns: repeat(auto-fit, 70px);
