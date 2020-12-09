@@ -9,7 +9,7 @@ $(document).ready(() => {
     loadCalendar();
     loadTasks();
     loadClock();
-    loadToggle();
+    loadToggl();
     loadCsAutoLogin();
 });
 
@@ -32,7 +32,12 @@ function getClock(){
     `;
 }
 
-function loadToggle() {
+function loadToggl() {
+    updateToggl();
+    window.setInterval(updateToggl , 1000 * 60); // Update the time every 60 seconds
+}
+
+function updateToggl() {
     $.ajax({
         beforeSend: function (xhr) {
             xhr.setRequestHeader ("Authorization", "Basic " + btoa(`${TOGGL_TOKEN}:api_token`));
