@@ -32,6 +32,13 @@ function getClock(){
     `;
 }
 
+// https://stackoverflow.com/questions/35088088/javascript-for-getting-the-previous-monday
+function getPreviousMonday(){
+    var prevMonday = new Date();
+    prevMonday.setDate(prevMonday.getDate() - (prevMonday.getDay() + 6) % 7);
+    return prevMonday.toISOString().split("T")[0];
+}
+
 function loadToggl() {
     updateToggl();
     window.setInterval(updateToggl , 1000 * 60); // Update the time every 60 seconds
@@ -47,7 +54,7 @@ function updateToggl() {
         data: {
             "user_agent": EMAIL,
             "workspace_id": 4654037,
-            "since": "2020-12-07",
+            "since": getPreviousMonday(),
             "user_ids": 5245584,
         },
         url: "https://api.track.toggl.com/reports/api/v2/weekly",
