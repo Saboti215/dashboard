@@ -9,7 +9,7 @@ $(document).ready(() => {
     loadCalendar();
     loadTasks();
     loadClock();
-    loadToggl();
+    updateToggl();
     loadCsAutoLogin();
 });
 
@@ -37,11 +37,6 @@ function getPreviousMonday(){
     var prevMonday = new Date();
     prevMonday.setDate(prevMonday.getDate() - (prevMonday.getDay() + 6) % 7);
     return prevMonday.toISOString().split("T")[0];
-}
-
-function loadToggl() {
-    updateToggl();
-    window.setInterval(updateToggl , 1000 * 60); // Update the time every 60 seconds
 }
 
 function updateToggl() {
