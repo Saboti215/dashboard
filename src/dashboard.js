@@ -62,6 +62,9 @@ function updateToggl() {
             if(minutes < 10) minutes = `0${minutes}`;
 
             $("#toggl > #cc-time").text(`${hours}:${minutes}`);
+        },
+        error: function(error) {
+            $("#toggl > #cc-time").text(`--:--`);
         }
     });
 }
