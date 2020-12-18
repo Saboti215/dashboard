@@ -6,6 +6,7 @@ $(document).ready(() => {
 
     // Background
     loadBackground();
+    loadMeetings();
     loadCalendar();
     loadTasks();
     loadClock();
@@ -13,8 +14,42 @@ $(document).ready(() => {
     loadCsAutoLogin();
 });
 
+function loadMeetings(){
+    updateMeetings();
+    window.setInterval(() => {
+        updateMeetings();
+    }, 60 * 1000); // Reload every minute
+}
+
 function loadCalendar(){
     $("#calendar-wrapper").html(CALENDER_FRAME);
+}
+
+function updateMeetings(){
+
+    // Get data
+    $.getJSON("src/meetings.json", data => {
+            
+        // Check if there is a meeting in the next 15 minutes or right now
+        const today = new Date();
+        const now = today.getHours() * 60 + today.getMinutes();
+        let meeting = data.find(m => {
+            const startHour = parseInt(m.start_time.split(":")[0]);
+            const endHour = parseInt(m.end_time.split(":")[0]);
+            const startMin = parseInt(m.start_time.split(":")[1]);
+            const endMin = parseInt(m.end_time.split(":")[1]);
+            const start = startHour * 60 + startMin - 15; // 15 Minutes before the start
+            const end = endHour * 60 + endMin;
+
+            // Return wheither this meeting is now or not
+            return (m.weekday === today.getDay() && start <= now && now <= end);
+        });
+
+        if(meeting){ // Check if there is an meeting
+            $(document.body).append(`<a id="join-zoom" href="${ZOOM_URL}${meeting.meeting_id}" title="Join Meeting ${meeting.name}" data-name="${meeting.name}" data-start="${meeting.start_time}"></a>`);
+            copyToClipboard(meeting.password);
+        }
+    });
 }
 
 function loadClock(){
@@ -165,3 +200,12 @@ function loadCsAutoLogin(){
 function getRandomInt(min, max) {
     return Math.floor(Math.random() * (max + 1 - min) + min);
 }
+
+function copyToClipboard(str){
+    const el = document.createElement('textarea');
+    el.value = str;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+};

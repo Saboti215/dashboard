@@ -29,6 +29,46 @@ body:after{
     font-family: Consolas;
 }
 
+#join-zoom{
+    display: block;
+    widtH: 75px;
+    height: 75px;
+    background: url(../assets/app_icons/zoom.png) white;
+    background-size: cover;
+    background-position: center;
+    border-radius: 50%;
+    position: fixed;
+    bottom: 25px;
+    left: 25px;
+    cursor: pointer;
+}
+
+#join-zoom:hover{
+    box-shadow: var(--white) 0 0 20px 0;
+}
+
+#join-zoom:before{
+    content: attr(data-name);
+    text-decoration: none;
+    color: var(--white);
+    font-size: 10px;
+    top: 10px;
+    position: absolute;
+    text-align: center;
+    width: 100%;
+}
+
+#join-zoom:after{
+    content: attr(data-start);
+    text-decoration: none;
+    color: var(--white);
+    font-size: 10px;
+    bottom: 10px;
+    position: absolute;
+    text-align: center;
+    width: 100%;
+}
+
 #dashboard{
     padding: 50px;
     display: grid;
