@@ -169,7 +169,7 @@ async function loadTasks(){
                 // Get labels of the task
                 await getLabels(task.id).then(labels => {
                     let label_html = "";
-                    for (label of labels)
+                    for (const label of labels)
                         label_html += `<span style="background-color: #${label.color}">${label.name}</span>`;
     
                     // Make project breaker
@@ -184,7 +184,7 @@ async function loadTasks(){
                             <div class="task-labels">${label_html}</div>
                             <span class="task-name">${task.name}</span>
                             <div class="task-desc">${task.notes_html}</div>
-                            <span class="task-deadline">${task.due === null ? "" : (new Date(task.due).toLocaleString())}</span>
+                            <span class="task-deadline">${task.due ? (new Date(task.due).toLocaleString()) : ""}</span>
                         </div>
                     `);
                 });
