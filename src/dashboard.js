@@ -165,7 +165,8 @@ async function loadTasks(){
         let last_project = null;
 
         await getProjects().then(async projects => {
-            for(task of data){
+            for(const task of data){
+                
                 // Get labels of the task
                 await getLabels(task.id).then(labels => {
                     let label_html = "";
