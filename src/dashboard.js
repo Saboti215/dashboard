@@ -3,6 +3,9 @@
 let taskLabels = null;
 
 $(document).ready(() => {
+    
+    // Set the copy right
+    $(document.body).attr("data-copy-right", `© ${new Date().getFullYear()} Tobias Schlößer`);
 
     // Background
     loadBackground();

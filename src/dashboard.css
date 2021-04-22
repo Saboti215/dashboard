@@ -20,7 +20,7 @@ body{
 }
 
 body:after{
-    content: "© 2020 Tobias Schlößer";
+    content: attr(data-copy-right);
     position: fixed;
     bottom: 10px;
     right: 20px;
