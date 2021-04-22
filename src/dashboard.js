@@ -45,16 +45,27 @@ function updateMeetings(){
             const end = endHour * 60 + endMin;
 
             // Return wheither this meeting is now or not
-            return (m.weekday === today.getDay() && start <= now && now <= end);
+            return (m.weekday === today.getDay() && start <= now && now < end);
         });
 
         if(meeting){ // Check if there is an meeting
+            $("#join-zoom").remove();
             $(document.body).append(`<a id="join-zoom" title="Join Meeting ${meeting.name}" data-name="${meeting.name}" data-start="${meeting.start_time}"></a>`);
             
-            // Copy password to clipboard and open the meeting on click on the icon
             $("#join-zoom").on("click", () => {
-                copyToClipboard(meeting.password);
-                window.location.href = ZOOM_URL + meeting.meeting_id;
+                
+
+                // Check if we have a meeting with password link
+                if(meeting.link){
+
+                    // Join the meeting directly
+                    window.location.href = ZOOM_URL + meeting.link;
+                } else {
+
+                    // Copy pw and join the meeting
+                    copyToClipboard(meeting.password);
+                    window.location.href = ZOOM_URL + meeting.meeting_id;
+                }
             });
         }
     });
