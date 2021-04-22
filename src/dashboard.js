@@ -46,8 +46,13 @@ function updateMeetings(){
         });
 
         if(meeting){ // Check if there is an meeting
-            $(document.body).append(`<a id="join-zoom" href="${ZOOM_URL}${meeting.meeting_id}" title="Join Meeting ${meeting.name}" data-name="${meeting.name}" data-start="${meeting.start_time}"></a>`);
-            copyToClipboard(meeting.password);
+            $(document.body).append(`<a id="join-zoom" title="Join Meeting ${meeting.name}" data-name="${meeting.name}" data-start="${meeting.start_time}"></a>`);
+            
+            // Copy password to clipboard and open the meeting on click on the icon
+            $("#join-zoom").on("click", () => {
+                copyToClipboard(meeting.password);
+                window.location.href = ZOOM_URL + meeting.meeting_id;
+            });
         }
     });
 }
