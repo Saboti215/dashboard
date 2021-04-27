@@ -56,10 +56,10 @@ function updateMeetings(){
                 
 
                 // Check if we have a meeting with password link
-                if(meeting.link){
+                if(meeting.pwd){
 
                     // Join the meeting directly
-                    window.location.href = ZOOM_URL + meeting.link;
+                    window.location.href = ZOOM_URL + meeting.meeting_id + "?pwd=" + meeting.pwd;
                 } else {
 
                     // Copy pw and join the meeting
