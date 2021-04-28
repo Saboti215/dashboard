@@ -18,17 +18,26 @@ $(document).ready(() => {
 });
 
 function loadMeetings(){
-    updateMeetings();
-    window.setInterval(() => {
-        updateMeetings();
-    }, 60 * 1000); // Reload every minute
+    if (updateMeetings()){
+        window.setInterval(() => {
+            updateMeetings();
+        }, 60 * 1000); // Reload every minute
+    }
 }
 
 function loadCalendar(){
+    if(typeof CALENDER_FRAME === "undefined"){
+        $("#calendar-wrapper").parent().remove();
+
+        return;
+    }
+
     $("#calendar-wrapper").html(CALENDER_FRAME);
 }
 
 function updateMeetings(){
+
+    if(typeof ZOOM_URL === "undefined") return false;
 
     // Get data
     $.getJSON("src/meetings.json", data => {
@@ -69,6 +78,8 @@ function updateMeetings(){
             });
         }
     });
+
+    return true;
 }
 
 function loadClock(){
@@ -94,6 +105,12 @@ function getPreviousMonday(){
 }
 
 function updateToggl() {
+
+    if(typeof TOGGL_TOKEN === "undefined" || typeof EMAIL === "undefined"){
+        $("#toggl").remove();
+        return;
+    }
+
     $.ajax({
         beforeSend: function (xhr) {
             xhr.setRequestHeader ("Authorization", "Basic " + btoa(`${TOGGL_TOKEN}:api_token`));
@@ -124,6 +141,9 @@ function updateToggl() {
 }
 
 function loadBackground(){
+
+    if(typeof PIXABAY_API_KEY === "undefined") return;
+
     const imageNumber = 200;
     // Standard query: skyline
     const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=universe&image_type=photo&per_page=200&orientation=horizontal&category=science`;
@@ -137,6 +157,9 @@ function loadBackground(){
 }
 
 async function getLabels(taskId){
+
+    if(typeof MASTER_TASK_API_KEY === "undefined") return;
+
     const url = `https://www.meistertask.com/api/tasks/${taskId}/labels?access_token=${MASTER_TASK_API_KEY}`;
     let res = null;
     await $.getJSON(url, data => {
@@ -146,6 +169,9 @@ async function getLabels(taskId){
 }
 
 async function getProjects(){
+
+    if(typeof MASTER_TASK_API_KEY === "undefined") return;
+
     const url = `https://www.meistertask.com/api/projects?access_token=${MASTER_TASK_API_KEY}`;
     let res = null;
     await $.getJSON(url, data => {
@@ -155,6 +181,11 @@ async function getProjects(){
 }
 
 async function loadTasks(){
+
+    if(typeof MASTER_TASK_API_KEY === "undefined"){
+        $("#todo-wrapper").parent().remove();
+        return;
+    };
 
     // Get all tasks which aren't closed
     const url = `https://www.meistertask.com/api/tasks?status=1&access_token=${MASTER_TASK_API_KEY}`;
@@ -205,6 +236,12 @@ async function loadTasks(){
 }
 
 function loadCsAutoLogin(){
+
+    if(typeof CS_USERNAME === "undefined" || typeof CS_PASSWORD === "undefined"){
+        $("a[data-name=CodingSpace]").remove();
+        return;
+    }
+    
     $("a[data-name=CodingSpace]").on("click", () => {
         const form = `<form id="cs-login-form" action="https://codeclub.de/internal/?page=login" method="post" style="display: none;">
             <input name="login[userName]" value="${CS_USERNAME}">
