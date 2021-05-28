@@ -291,3 +291,12 @@ body:after{
     right: -200px;
     bottom: 30px;
 }
+
+#reload-bg{
+    width: 100px;
+    height: 100px;
+    position: fixed;
+    top: 0;
+    right: 0;
+    cursor: alias;
+}

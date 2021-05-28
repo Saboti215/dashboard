@@ -7,7 +7,6 @@ $(document).ready(() => {
     // Set the copy right
     $(document.body).attr("data-copy-right", `© ${new Date().getFullYear()} Tobias Schlößer`);
 
-    // Background
     loadBackground();
     loadMeetings();
     loadCalendar();
@@ -16,6 +15,8 @@ $(document).ready(() => {
     updateToggl();
     loadCsAutoLogin();
     loadRadio();
+
+    $("#reload-bg").on("click", loadBackground);
 });
 
 function loadMeetings(){
