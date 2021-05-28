@@ -15,6 +15,7 @@ $(document).ready(() => {
     loadClock();
     updateToggl();
     loadCsAutoLogin();
+    loadRadio();
 });
 
 function loadMeetings(){
@@ -23,6 +24,15 @@ function loadMeetings(){
             updateMeetings();
         }, 60 * 1000); // Reload every minute
     }
+}
+
+function loadRadio(){
+    if(typeof TUNEIN_SENDER_ID === "undefined"){
+        $("#radio-frame").remove();
+        return;
+    }
+
+    $("#radio-frame").attr("src", `https://tunein.com/embed/player/s${TUNEIN_SENDER_ID}/`);
 }
 
 function loadCalendar(){

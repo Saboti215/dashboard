@@ -283,3 +283,11 @@ body:after{
     pointer-events: none;
     text-align: center;
 }
+
+#radio-frame{
+    width: 300px;
+    height: 100px;
+    position: fixed;
+    right: -200px;
+    bottom: 30px;
+}
