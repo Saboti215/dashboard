@@ -244,6 +244,12 @@ body:after{
     bottom: 10px;
 }
 
+#covid{
+    width: 100%;
+    position: absolute;
+    top: 10px;
+}
+
 #apps-wrapper{
     display: grid;
     grid-template-columns: repeat(auto-fit, 70px);

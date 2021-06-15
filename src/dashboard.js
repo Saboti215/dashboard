@@ -15,6 +15,7 @@ $(document).ready(() => {
     updateToggl();
     loadCsAutoLogin();
     loadRadio();
+    loadCovid();
 
     $("#reload-bg").on("click", loadBackground);
 });
@@ -34,6 +35,28 @@ function loadRadio(){
     }
 
     $("#radio-frame").attr("src", `https://tunein.com/embed/player/s${TUNEIN_SENDER_ID}/`);
+}
+
+function loadCovid(){
+    if(typeof ALLGEMEINER_GEMEINDE_SCHLUESSEL === "undefined" || typeof GEMEINDE_NAME === "undefined"){
+        $("#covid").remove();
+        $("#covid-district-name").remove();
+        return;
+    }
+
+    $.ajax({
+        type: "GET",
+        dataType: "json",
+        url: `https://api.corona-zahlen.org/districts/${ALLGEMEINER_GEMEINDE_SCHLUESSEL}`,
+        success: function(data) {
+            const incidence = data.data[ALLGEMEINER_GEMEINDE_SCHLUESSEL].weekIncidence.toFixed(1);
+            $("#covid-incidence").html(incidence);
+            $("#covid-district-name").html(`(${GEMEINDE_NAME})`);
+        },
+        error: function(error) {
+            console.log(error);
+        }
+    });
 }
 
 function loadCalendar(){
