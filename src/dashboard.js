@@ -47,7 +47,7 @@ function loadCovid(){
     $.ajax({
         type: "GET",
         dataType: "json",
-        url: `https://api.corona-zahlen.org/districts/${ALLGEMEINER_GEMEINDE_SCHLUESSEL}`,
+        url: `https://api.corona-zahlen.org/districts/`,
         success: function(data) {
             const incidence = data.data[ALLGEMEINER_GEMEINDE_SCHLUESSEL].weekIncidence.toFixed(1);
             $("#covid-incidence").html(incidence);
