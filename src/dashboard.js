@@ -92,22 +92,31 @@ function updateMeetings(){
         });
 
         if(meeting){ // Check if there is an meeting
-            $("#join-zoom").remove();
-            $(document.body).append(`<a id="join-zoom" title="Join Meeting ${meeting.name}" data-name="${meeting.name}" data-start="${meeting.start_time}"></a>`);
+            $("#join-meeting").remove();
+            $(document.body).append(`<a id="join-meeting" title="Join Meeting ${meeting.name}" data-name="${meeting.name}" data-start="${meeting.start_time}" data-type="${meeting.type}"></a>`);
             
-            $("#join-zoom").on("click", () => {
+            $("#join-meeting").on("click", () => {
                 
 
                 // Check if we have a meeting with password link
-                if(meeting.pwd){
+                if(meeting.pwd && meeting.type === "zoom"){
 
                     // Join the meeting directly
                     window.location.href = ZOOM_URL + meeting.meeting_id + "?pwd=" + meeting.pwd;
+
                 } else {
 
                     // Copy pw and join the meeting
                     copyToClipboard(meeting.password);
-                    window.location.href = ZOOM_URL + meeting.meeting_id;
+
+                    switch(meeting.type){
+                        case "dfn":
+                            window.location.href = DFN_URL + meeting.meeting_id;
+                            break;
+                        case "zoom":
+                            window.location.href = ZOOM_URL + meeting.meeting_id;
+                            break;
+                    }
                 }
             });
         }

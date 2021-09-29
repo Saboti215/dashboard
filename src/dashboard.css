@@ -29,11 +29,11 @@ body:after{
     font-family: Consolas;
 }
 
-#join-zoom{
+#join-meeting{
     display: block;
     widtH: 75px;
     height: 75px;
-    background: url(../assets/app_icons/zoom.png) white;
+    background-color: var(--white);
     background-size: cover;
     background-position: center;
     border-radius: 50%;
@@ -43,11 +43,20 @@ body:after{
     cursor: pointer;
 }
 
-#join-zoom:hover{
+#join-meeting[data-type="zoom"]{
+    background-image: url(../assets/app_icons/zoom.png);
+}
+
+#join-meeting[data-type="dfn"]{
+    background-image: url(../assets/app_icons/dfn.png);
+    background-size: 85%;
+}
+
+#join-meeting:hover{
     box-shadow: var(--white) 0 0 20px 0;
 }
 
-#join-zoom:before{
+#join-meeting:before{
     content: attr(data-name);
     text-decoration: none;
     color: var(--white);
@@ -58,7 +67,7 @@ body:after{
     width: 100%;
 }
 
-#join-zoom:after{
+#join-meeting:after{
     content: attr(data-start);
     text-decoration: none;
     color: var(--white);
