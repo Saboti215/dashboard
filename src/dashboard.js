@@ -10,7 +10,7 @@ $(document).ready(() => {
     loadBackground();
     loadMeetings();
     loadCalendar();
-    loadTasks();
+    //loadTasks();
     loadClock();
     updateToggl();
     loadCsAutoLogin();
@@ -189,7 +189,7 @@ function loadBackground(){
 
     const imageNumber = 200;
     // Standard query: skyline
-    const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=universe&image_type=photo&per_page=200&orientation=horizontal&category=science`;
+    const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${PIXABAY_QUERY}&image_type=photo&per_page=200&orientation=horizontal&category=science`;
     $.getJSON(url, data => {
         if (parseInt(data.hits.length) > 0){
             const n = getRandomInt(3, data.hits.length-1);
