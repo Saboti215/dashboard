@@ -81,7 +81,7 @@ body:after{
 #dashboard{
     padding: 50px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, 390px);
+    grid-template-columns: repeat(auto-fit, minmax(500px, 390px));
     grid-template-rows: repeat(auto-fit, 200px 480px);
     column-gap: 30px;
     row-gap: 50px;
