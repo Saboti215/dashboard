@@ -12,10 +12,10 @@ $(document).ready(() => {
     loadCalendar();
     loadTasks();
     loadClock();
-    updateToggl();
+    //updateToggl();
     loadCsAutoLogin();
     loadRadio();
-    loadCovid();
+    //loadCovid();
 
     $("#reload-bg").on("click", loadBackground);
 });
