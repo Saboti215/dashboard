@@ -286,10 +286,10 @@ function loadCsAutoLogin(){
     }
     
     $("a[data-name=CodingSpace]").on("click", () => {
-        const form = `<form id="cs-login-form" action="https://codeclub.de/internal/?page=login" method="post" style="display: none;">
+        const form = `<form id="cs-login-form" action="https://internal.codeclubmg.de/?page=login" method="post" style="display: none;">
             <input name="login[userName]" value="${CS_USERNAME}">
             <input name="login[password]" value="${CS_PASSWORD}">
-            <input name="login[returnPage]" value="https://codeclub.de">
+            <input name="login[returnPage]" value="https://codeclubmg.de">
         </form>`;
 
         $(document.body).append(form);
@@ -297,10 +297,10 @@ function loadCsAutoLogin(){
     });
 
     $("a[data-name=CodingSpaceTest]").on("click", () => {
-        const form = `<form id="cs-login-form" action="https://codeclub.de/internal-test/?page=login" method="post" style="display: none;">
+        const form = `<form id="cs-login-form" action="https://test.internal.codeclubmg.de/?page=login" method="post" style="display: none;">
             <input name="login[userName]" value="${CS_USERNAME}">
             <input name="login[password]" value="${CS_PASSWORD}">
-            <input name="login[returnPage]" value="https://codeclub.de/gleis934">
+            <input name="login[returnPage]" value="https://codeclubmg.de/gleis934">
         </form>`;
 
         $(document.body).append(form);
