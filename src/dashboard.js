@@ -10,7 +10,7 @@ $(document).ready(() => {
     loadBackground();
     loadMeetings();
     loadCalendar();
-    //loadTasks();
+    loadTasks();
     loadClock();
     updateToggl();
     loadCsAutoLogin();
