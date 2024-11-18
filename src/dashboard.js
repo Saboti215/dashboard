@@ -231,11 +231,12 @@ async function loadTasks(){
     };
 
     // Get all tasks which aren't closed
-    const url = `https://www.meistertask.com/api/tasks?status=1&access_token=${MASTER_TASK_API_KEY}`;
+    const url = `https://www.meistertask.com/api/tasks?status=1&sort=project_id,due&access_token=${MASTER_TASK_API_KEY}`;
     $.getJSON(url, async data => {
 
         // Sort tasks by project
-        data = data.sort((a,b) => a.project_id > b.project_id ? 1 : -1);
+        // already sorted by api
+	//data = data.sort((a,b) => a.project_id > b.project_id ? 1 : -1);
         let last_project = null;
 
         await getProjects().then(async projects => {
