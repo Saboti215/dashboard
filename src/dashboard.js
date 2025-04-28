@@ -184,6 +184,8 @@ function updateToggl() {
 }
 
 function loadBackground(){
+    $(document.body).css("background-image", `url(assets/bg.jpg)`);
+    return;
 
     if(typeof PIXABAY_API_KEY === "undefined") return;
 
