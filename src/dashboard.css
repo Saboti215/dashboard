@@ -79,7 +79,7 @@ body:after{
 }
 
 #dashboard{
-    padding: 10vh 0 20vh 0;
+    padding: 10vh 20vh 20vh 20vh;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(30%, 390px));
     grid-template-rows: repeat(auto-fit, 200px minmax(calc(100vh - 40vh - 7vh - 10vh), 40vh));

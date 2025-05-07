@@ -67,6 +67,27 @@ function loadCalendar(){
     }
 
     $("#calendar-wrapper").html(CALENDER_FRAME);
+
+    
+    const resizeIframe = () => {
+        const $el = $("#calendar-container");
+        const h = Math.round($el.height() - 61);
+        const w = Math.round($el.width());
+        
+        //console.log(w, h);
+
+        const $iframe = $("#calendar-wrapper iframe");
+        $iframe.width(w);
+        $iframe.height(h);
+        //$iframe.attr("src", $iframe.attr("src").replace(/height=\d+/, `height=${h}`));
+        $iframe.attr("height", h);
+        $iframe.attr("width", w);
+    };
+
+    $(window).on("resize", resizeIframe);
+
+    // Init resize iframe
+    resizeIframe(); 
 }
 
 function updateMeetings(){
