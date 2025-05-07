@@ -88,6 +88,8 @@ function loadCalendar(){
 
     // Init resize iframe
     resizeIframe(); 
+
+    window.setTimeout(resizeIframe, 100)
 }
 
 function updateMeetings(){
