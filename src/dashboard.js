@@ -1,107 +1,65 @@
 
-
-let taskLabels = null;
-
 $(document).ready(() => {
-    
-    // Set the copy right
+    // Set the copyright year
     $(document.body).attr("data-copy-right", `© ${new Date().getFullYear()} Tobias Schlößer`);
 
     loadBackground();
     loadMeetings();
     loadCalendar();
-    loadTasks();
     loadClock();
-    //updateToggl();
     loadCsAutoLogin();
     loadRadio();
-    //loadCovid();
-
-    $("#reload-bg").on("click", loadBackground);
 });
 
-function loadMeetings(){
-    if (updateMeetings()){
+function loadMeetings() {
+    if (updateMeetings()) {
         window.setInterval(() => {
             updateMeetings();
         }, 60 * 1000); // Reload every minute
     }
 }
 
-function loadRadio(){
-    if(typeof TUNEIN_SENDER_ID === "undefined"){
-        $("#radio-frame").remove();
+function loadRadio() {
+    if (typeof TUNEIN_SENDER_ID === "undefined") {
+        $("#radio-panel, #radio-toggle").remove();
         return;
     }
 
     $("#radio-frame").attr("src", `https://tunein.com/embed/player/s${TUNEIN_SENDER_ID}/`);
-}
 
-function loadCovid(){
-    if(typeof ALLGEMEINER_GEMEINDE_SCHLUESSEL === "undefined" || typeof GEMEINDE_NAME === "undefined"){
-        $("#covid").remove();
-        $("#covid-district-name").remove();
-        return;
-    }
+    // Toggle player panel visibility
+    $("#radio-toggle").on("click", function() {
+        $("#radio-panel").toggleClass("active");
+        $(this).toggleClass("active");
+    });
 
-    $.ajax({
-        type: "GET",
-        dataType: "json",
-        url: `https://api.corona-zahlen.org/districts/`,
-        success: function(data) {
-            const incidence = data.data[ALLGEMEINER_GEMEINDE_SCHLUESSEL].weekIncidence.toFixed(1);
-            $("#covid-incidence").html(incidence);
-            $("#covid-district-name").html(`(${GEMEINDE_NAME})`);
-        },
-        error: function(error) {
-            console.log(error);
+    // Close player when clicking outside it
+    $(document).on("click", function(event) {
+        if (!$(event.target).closest("#radio-panel, #radio-toggle").length) {
+            $("#radio-panel").removeClass("active");
+            $("#radio-toggle").removeClass("active");
         }
     });
 }
 
-function loadCalendar(){
-    if(typeof CALENDER_FRAME === "undefined"){
-        $("#calendar-wrapper").parent().remove();
-
+function loadCalendar() {
+    if (typeof CALENDER_FRAME === "undefined") {
+        $("#calendar-container").remove();
         return;
     }
 
     $("#calendar-wrapper").html(CALENDER_FRAME);
-
-    
-    const resizeIframe = () => {
-        const $el = $("#calendar-container");
-        const h = Math.round($el.height() - 61);
-        const w = Math.round($el.width());
-        
-        //console.log(w, h);
-
-        const $iframe = $("#calendar-wrapper iframe");
-        $iframe.width(w);
-        $iframe.height(h);
-        //$iframe.attr("src", $iframe.attr("src").replace(/height=\d+/, `height=${h}`));
-        $iframe.attr("height", h);
-        $iframe.attr("width", w);
-    };
-
-    $(window).on("resize", resizeIframe);
-
-    // Init resize iframe
-    resizeIframe(); 
-
-    window.setTimeout(resizeIframe, 100)
 }
 
-function updateMeetings(){
-
-    if(typeof ZOOM_URL === "undefined") return false;
+function updateMeetings() {
+    if (typeof ZOOM_URL === "undefined") return false;
 
     // Get data
     $.getJSON("src/meetings.json", data => {
-            
         // Check if there is a meeting in the next 15 minutes or right now
         const today = new Date();
         const now = today.getHours() * 60 + today.getMinutes();
+        
         let meeting = data.find(m => {
             const startHour = parseInt(m.start_time.split(":")[0]);
             const endHour = parseInt(m.end_time.split(":")[0]);
@@ -110,208 +68,94 @@ function updateMeetings(){
             const start = startHour * 60 + startMin - 15; // 15 Minutes before the start
             const end = endHour * 60 + endMin;
 
-            // Return wheither this meeting is now or not
+            // Return whether this meeting is now or not
             return (m.weekday === today.getDay() && start <= now && now < end);
         });
 
-        if(meeting){ // Check if there is an meeting
-            $("#join-meeting").remove();
-            $(document.body).append(`<a id="join-meeting" title="Join Meeting ${meeting.name}" data-name="${meeting.name}" data-start="${meeting.start_time}" data-type="${meeting.type}"></a>`);
-            
-            $("#join-meeting").on("click", () => {
-                
+        if (meeting) {
+            // Check if meeting alert is already rendered
+            if ($("#active-meeting").length === 0) {
+                const meetingHtml = `
+                    <div class="meeting-card" id="active-meeting">
+                        <div class="meeting-header">
+                            <span class="pulse-dot"></span>
+                            <span class="meeting-badge">AKTIVES MEETING</span>
+                        </div>
+                        <div class="meeting-title">${meeting.name}</div>
+                        <div class="meeting-time">Heute ${meeting.start_time} - ${meeting.end_time} Uhr</div>
+                        <button class="meeting-btn" id="join-meeting-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="btn-icon">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            Beitreten
+                        </button>
+                    </div>
+                `;
+                $("#meeting-portal").html(meetingHtml).addClass("visible");
 
-                // Check if we have a meeting with password link
-                if(meeting.pwd && meeting.type === "zoom"){
+                $("#join-meeting-btn").on("click", () => {
+                    // Check if we have a meeting with password link
+                    if (meeting.pwd && meeting.type === "zoom") {
+                        // Join the meeting directly
+                        window.location.href = ZOOM_URL + meeting.meeting_id + "?pwd=" + meeting.pwd;
+                    } else {
+                        // Copy pw and join the meeting
+                        copyToClipboard(meeting.password);
 
-                    // Join the meeting directly
-                    window.location.href = ZOOM_URL + meeting.meeting_id + "?pwd=" + meeting.pwd;
-
-                } else {
-
-                    // Copy pw and join the meeting
-                    copyToClipboard(meeting.password);
-
-                    switch(meeting.type){
-                        case "dfn":
-                            window.location.href = DFN_URL + meeting.meeting_id;
-                            break;
-                        case "zoom":
-                            window.location.href = ZOOM_URL + meeting.meeting_id;
-                            break;
+                        switch (meeting.type) {
+                            case "dfn":
+                                window.location.href = DFN_URL + meeting.meeting_id;
+                                break;
+                            case "zoom":
+                                window.location.href = ZOOM_URL + meeting.meeting_id;
+                                break;
+                        }
                     }
-                }
-            });
+                });
+            }
+        } else {
+            $("#meeting-portal").removeClass("visible").empty();
         }
     });
 
     return true;
 }
 
-function loadClock(){
+function loadClock() {
+    // Initial load
+    $("#clock-time").html(getClockTime());
+    $("#clock-date").html(getClockDate());
+
     window.setInterval(() => {
-        $("#clock").html(getClock());
+        $("#clock-time").html(getClockTime());
+        $("#clock-date").html(getClockDate());
     }, 1000);
 }
 
-function getClock(){
+function getClockTime() {
+    const today = new Date();
+    return today.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function getClockDate() {
     const days = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
     const today = new Date();
-    return `
-        <span id="clock-time">${today.toLocaleTimeString()}</span><br />
-        <span id="clock-date">${days[today.getDay()]}, ${today.getDate()}.${today.getMonth()+1}.${today.getFullYear()}</span>
-    `;
+    return `${days[today.getDay()]}, ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
 }
 
-// https://stackoverflow.com/questions/35088088/javascript-for-getting-the-previous-monday
-function getPreviousMonday(){
-    var prevMonday = new Date();
-    prevMonday.setDate(prevMonday.getDate() - (prevMonday.getDay() + 6) % 7);
-    return prevMonday.toISOString().split("T")[0];
-}
-
-function updateToggl() {
-
-    if(typeof TOGGL_TOKEN === "undefined" || typeof EMAIL === "undefined"){
-        $("#toggl").remove();
-        return;
-    }
-
-    $.ajax({
-        beforeSend: function (xhr) {
-            xhr.setRequestHeader ("Authorization", "Basic " + btoa(`${TOGGL_TOKEN}:api_token`));
-        },
-        type: "GET",
-        dataType: "json",
-        data: {
-            "user_agent": EMAIL,
-            "workspace_id": 4654037,
-            "since": getPreviousMonday(),
-            "user_ids": 5245584,
-        },
-        url: "https://api.track.toggl.com/reports/api/v2/weekly",
-        success: function(data) {
-            let workedMinutes = Math.round(data.total_grand / 60000);
-            let hours = Math.floor(workedMinutes / 60);
-            let minutes = workedMinutes % 60;
-
-            if(hours < 10) hours = `0${hours}`;
-            if(minutes < 10) minutes = `0${minutes}`;
-
-            $("#toggl > #cc-time").text(`${hours}:${minutes}`);
-        },
-        error: function(error) {
-            $("#toggl > #cc-time").text(`--:--`);
-        }
-    });
-}
-
-function loadBackground(){
+function loadBackground() {
+    // Sets standard local image
     $(document.body).css("background-image", `url(assets/bg.jpg)`);
-    return;
-
-    if(typeof PIXABAY_API_KEY === "undefined") return;
-
-    const imageNumber = 200;
-    // Standard query: skyline
-    const url = `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${PIXABAY_QUERY}&image_type=photo&per_page=200&orientation=horizontal&category=science`;
-    $.getJSON(url, data => {
-        if (parseInt(data.hits.length) > 0){
-            const n = getRandomInt(3, data.hits.length-1);
-            $(document.body).css("background-image", `url(${data.hits[n].largeImageURL})`);
-        }else
-            console.warn('No background image found');
-    });
 }
 
-async function getLabels(taskId){
-
-    if(typeof MASTER_TASK_API_KEY === "undefined") return;
-
-    const url = `https://www.meistertask.com/api/tasks/${taskId}/labels?access_token=${MASTER_TASK_API_KEY}`;
-    let res = null;
-    await $.getJSON(url, data => {
-        res = data;
-    });
-    return res;
-}
-
-async function getProjects(){
-
-    if(typeof MASTER_TASK_API_KEY === "undefined") return;
-
-    const url = `https://www.meistertask.com/api/projects?access_token=${MASTER_TASK_API_KEY}`;
-    let res = null;
-    await $.getJSON(url, data => {
-        res = data;
-    });
-    return res;
-}
-
-async function loadTasks(){
-
-    if(typeof MASTER_TASK_API_KEY === "undefined"){
-        $("#todo-wrapper").parent().remove();
-        return;
-    };
-
-    // Get all tasks which aren't closed
-    const url = `https://www.meistertask.com/api/tasks?status=1&sort=project_id,due&access_token=${MASTER_TASK_API_KEY}`;
-    $.getJSON(url, async data => {
-
-        // Sort tasks by project
-        // already sorted by api
-	//data = data.sort((a,b) => a.project_id > b.project_id ? 1 : -1);
-        let last_project = null;
-
-        await getProjects().then(async projects => {
-            for(const task of data){
-                
-                // Get labels of the task
-                await getLabels(task.id).then(labels => {
-                    let label_html = "";
-                    for (const label of labels)
-                        label_html += `<span style="background-color: #${label.color}">${label.name}</span>`;
-    
-                    // Make project breaker
-                    if(task.project_id !== last_project){
-                        $("#todo-wrapper").append(`<div class="task-project-headline">${projects.find(p => p.id === task.project_id).name}</div>`);
-                    }
-                    last_project = task.project_id;
-
-                    // Display the tasks
-                    $("#todo-wrapper").append(`
-                        <div data-taskid="${task.id}" class="task${task.notes ? " has-desc" : ""}">
-                            <div class="task-labels">${label_html}</div>
-                            <span class="task-name">${task.name}</span>
-                            <div class="task-desc">${task.notes_html}</div>
-                            <span class="task-deadline">${task.due ? (new Date(task.due).toLocaleString()) : ""}</span>
-                        </div>
-                    `);
-                });
-            }
-            
-            // Anzahl der Tasks anzeigen
-            $("#task-counter").text(data.length);
-
-            // Event Listener setzen
-            $("#todo-wrapper .task.has-desc").click(function() {
-                $(this).toggleClass("active");
-            });
-
-        });
-    });
-
-}
-
-function loadCsAutoLogin(){
-
-    if(typeof CS_USERNAME === "undefined" || typeof CS_PASSWORD === "undefined"){
+function loadCsAutoLogin() {
+    if (typeof CS_USERNAME === "undefined" || typeof CS_PASSWORD === "undefined") {
         $("a[data-name=CodingSpace]").remove();
         return;
     }
-    
-    $("a[data-name=CodingSpace]").on("click", () => {
+
+    $("a[data-name=CodingSpace]").on("click", (e) => {
+        e.preventDefault();
         const form = `<form id="cs-login-form" action="https://internal.codeclubmg.de/?page=login" method="post" style="display: none;">
             <input name="login[userName]" value="${CS_USERNAME}">
             <input name="login[password]" value="${CS_PASSWORD}">
@@ -322,7 +166,8 @@ function loadCsAutoLogin(){
         $("form#cs-login-form").submit();
     });
 
-    $("a[data-name=CodingSpaceTest]").on("click", () => {
+    $("a[data-name=CodingSpaceTest]").on("click", (e) => {
+        e.preventDefault();
         const form = `<form id="cs-login-form" action="https://test.internal.codeclubmg.de/?page=login" method="post" style="display: none;">
             <input name="login[userName]" value="${CS_USERNAME}">
             <input name="login[password]" value="${CS_PASSWORD}">
@@ -334,15 +179,11 @@ function loadCsAutoLogin(){
     });
 }
 
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max + 1 - min) + min);
-}
-
-function copyToClipboard(str){
+function copyToClipboard(str) {
     const el = document.createElement('textarea');
     el.value = str;
     document.body.appendChild(el);
     el.select();
     document.execCommand('copy');
     document.body.removeChild(el);
-};
+}

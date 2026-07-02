@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta charset="utf-8"/>
@@ -12,59 +12,100 @@
         <title>Dashboard</title>
     </head>
     <body>
-        <div id="dashboard">
+        <!-- Background Overlay for modern aesthetic -->
+        <div id="bg-overlay"></div>
 
+        <div id="dashboard">
+            <!-- Left Side: Calendar -->
             <div class="container" id="calendar-container">
-                <a href="https://calendar.google.com/calendar/b/0/r">
+                <a href="https://calendar.google.com/calendar/b/0/r" target="_blank" class="container-header-link">
                     <div class="head">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="head-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                         Kalender
                     </div>
                 </a>
                 <div class="content" id="calendar-wrapper">
                 </div>
             </div>
-            <div class="container">
-                <a href="https://www.meistertask.com/app/dashboard">
-                    <div class="head">
-                        ToDo
-                        <span id="task-counter" class="counter"></span>
+
+            <!-- Right Side Stack: Clock & Apps -->
+            <div class="right-column">
+                <!-- Clock Widget -->
+                <div class="container clock-container">
+                    <div class="content" id="clock-wrapper">
+                        <div id="clock">
+                            <div id="clock-time">--:--:--</div>
+                            <div id="clock-date">Laden...</div>
+                        </div>
                     </div>
-                </a>
-                <div class="content" id="todo-wrapper">
-                    
                 </div>
-            </div>
-            <div class="container">
-                <div class="content" id="clock-wrapper">
-                    <!--<div id="covid"><span>7-Tage-Inzidenz: </span><span id="covid-incidence"></span> <span id="covid-district-name"></span></div>-->
-                    <div id="clock"></div>
-                    <!--<div id="toggl"><span>CodeClub-Zeit diese Woche: </span><span id="cc-time"></span><span>h</span></div>-->
-                </div>
-            </div>
-            <div class="container">
-                <div class="content" id="apps-wrapper">
-                    <!-- CodeClub-->
-                    <a href="https://codeclubmg.de" data-name="CodeClubMG" style="background-image: url(./assets/app_icons/codeclub.png);"></a>
-                    <a href="#" data-name="CodingSpace" style="background-image: url(./assets/app_icons/codingspace.png);"></a>
-                    
-                    <!-- Hochschule -->
-                    <a href="https://moodle.hsnr.de/login/index.php" data-name="Moodle" style="background-image: url(./assets/app_icons/moodle.png);"></a>
-                    <a href="https://hio.hsnr.de/" data-name="HIO" style="background-image: url(./assets/app_icons/hio.png);"></a>
-                    <a href="https://overleaf.com/project" data-name="Overleaf" style="background-image: url(./assets/app_icons/overleaf.png);"></a>
-                    
-                    <!-- Sonstiges -->
-                    <a href="https://drive.google.com" data-name="Drive" style="background-image: url(./assets/app_icons/drive.png);"></a>
-                    <a href="https://docs.google.com" data-name="Docs" style="background-image: url(./assets/app_icons/docs.png);"></a>
-                    <a href="https://track.toggl.com/timer?utm_source=toggl-button&utm_medium=referral.de" data-name="Toggl" style="background-image: url(./assets/app_icons/toggl.png);"></a>
-                    <a href="https://youtube.com" data-name="YouTube" style="background-image: url(./assets/app_icons/youtube.png);"></a>
-                    <a href="https://web2.magentatv.de/EPG/" data-name="MagentaTV" style="background-image: url(./assets/app_icons/magentatv.png);"></a>
+
+                <!-- Apps Widget -->
+                <div class="container" id="apps-container">
+                    <div class="head">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="head-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                        Quick Links
+                    </div>
+                    <div class="content" id="apps-wrapper">
+                        <!-- Category: Coding -->
+                        <div class="app-category">
+                            <div class="category-title">Coding</div>
+                            <div class="app-grid">
+                                <a href="https://codeclubmg.de" data-name="CodeClubMG" style="background-image: url(./assets/app_icons/codeclub.png);"></a>
+                                <a href="#" data-name="CodingSpace" style="background-image: url(./assets/app_icons/codingspace.png);"></a>
+                            </div>
+                        </div>
+
+                        <!-- Category: Hochschule -->
+                        <div class="app-category">
+                            <div class="category-title">Hochschule</div>
+                            <div class="app-grid">
+                                <a href="https://moodle.hsnr.de/login/index.php" data-name="Moodle" style="background-image: url(./assets/app_icons/moodle.png);"></a>
+                                <a href="https://hio.hsnr.de/" data-name="HIO" style="background-image: url(./assets/app_icons/hio.png);"></a>
+                                <a href="https://overleaf.com/project" data-name="Overleaf" style="background-image: url(./assets/app_icons/overleaf.png);"></a>
+                            </div>
+                        </div>
+
+                        <!-- Category: Sonstiges -->
+                        <div class="app-category">
+                            <div class="category-title">Sonstiges</div>
+                            <div class="app-grid">
+                                <a href="https://drive.google.com" data-name="Drive" style="background-image: url(./assets/app_icons/drive.png);"></a>
+                                <a href="https://docs.google.com" data-name="Docs" style="background-image: url(./assets/app_icons/docs.png);"></a>
+                                <a href="https://track.toggl.com/timer?utm_source=toggl-button&utm_medium=referral.de" data-name="Toggl" style="background-image: url(./assets/app_icons/toggl.png);"></a>
+                                <a href="https://youtube.com" data-name="YouTube" style="background-image: url(./assets/app_icons/youtube.png);"></a>
+                                <a href="https://web2.magentatv.de/EPG/" data-name="MagentaTV" style="background-image: url(./assets/app_icons/magentatv.png);"></a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <iframe id="radio-frame" scrolling="no" frameborder="no"></iframe>
+        <!-- Floating Music Player Widget -->
+        <div id="radio-panel">
+            <div class="radio-header">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="radio-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+                <span>TuneIn Radio</span>
+            </div>
+            <div class="radio-content">
+                <iframe id="radio-frame" scrolling="no" frameborder="no"></iframe>
+            </div>
+        </div>
 
-        <!--<div id="reload-bg"></div>-->
-        
+        <button id="radio-toggle" title="Radio Player">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+        </button>
+
+        <!-- Meeting Container Placeholder (will be animated in by JS) -->
+        <div id="meeting-portal"></div>
     </body>
 </html>

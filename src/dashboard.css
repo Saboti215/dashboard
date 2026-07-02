@@ -1,317 +1,548 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
-:root{
-    --dark: #2c393f;
-    --light: #00c7c7;
-    --gray: #ededed;
-    --white: #ffffff;
+:root {
+    --bg-dark: #0a0e17;
+    --card-bg: rgba(18, 22, 33, 0.55);
+    --card-border: rgba(255, 255, 255, 0.07);
+    --card-border-hover: rgba(255, 255, 255, 0.15);
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --accent-color: #6366f1;
+    --accent-glow: rgba(99, 102, 241, 0.15);
+    --emerald-green: #10b981;
+    --emerald-glow: rgba(16, 185, 129, 0.2);
+    --bg-gradient-overlay: radial-gradient(circle at center, rgba(10, 14, 23, 0.4) 0%, rgba(5, 7, 12, 0.85) 100%);
+    --calendar-filter: invert(0.89) hue-rotate(180deg) contrast(1.15) saturate(0.85);
 }
 
-body{
+* {
+    box-sizing: border-box;
     margin: 0;
-    font-family: Roboto;
-    overflow-x: hidden;
-    background-color: var(--white);
+    padding: 0;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text-primary);
+    background-color: var(--bg-dark);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    background-attachment: fixed;
     min-height: 100vh;
+    overflow-x: hidden;
     position: relative;
 }
 
-body:after{
+/* Background overlay for dimming and blurring */
+#bg-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-gradient-overlay);
+    backdrop-filter: blur(8px);
+    z-index: -1;
+    pointer-events: none;
+}
+
+body::after {
     content: attr(data-copy-right);
     position: fixed;
-    bottom: 10px;
-    right: 20px;
-    font-size: 10px;
-    color: var(--white);
-    font-family: Consolas;
+    bottom: 15px;
+    right: 25px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    font-family: monospace;
+    pointer-events: none;
+    z-index: 10;
 }
 
-#join-meeting{
-    display: block;
-    widtH: 75px;
-    height: 75px;
-    background-color: var(--white);
-    background-size: cover;
-    background-position: center;
-    border-radius: 50%;
-    position: fixed;
-    bottom: 25px;
-    left: 25px;
-    cursor: pointer;
-}
-
-#join-meeting[data-type="zoom"]{
-    background-image: url(../assets/app_icons/zoom.png);
-}
-
-#join-meeting[data-type="dfn"]{
-    background-image: url(../assets/app_icons/dfn.png);
-    background-size: 85%;
-}
-
-#join-meeting:hover{
-    box-shadow: var(--white) 0 0 20px 0;
-}
-
-#join-meeting:before{
-    content: attr(data-name);
-    text-decoration: none;
-    color: var(--white);
-    font-size: 10px;
-    top: 10px;
-    position: absolute;
-    text-align: center;
-    width: 100%;
-}
-
-#join-meeting:after{
-    content: attr(data-start);
-    text-decoration: none;
-    color: var(--white);
-    font-size: 10px;
-    bottom: 10px;
-    position: absolute;
-    text-align: center;
-    width: 100%;
-}
-
-#dashboard{
-    padding: 10vh 20vh 20vh 20vh;
+/* Grid Dashboard Layout */
+#dashboard {
+    width: 80vw;
+    max-width: 2000px;
+    margin: 0 auto;
+    padding: 30px 20px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(30%, 390px));
-    grid-template-rows: repeat(auto-fit, 200px minmax(calc(100vh - 40vh - 7vh - 10vh), 40vh));
-    column-gap: 2vh;
-    row-gap: 5vh;
-    justify-content: center;
-}   
-
-#dashboard .container:nth-of-type(1),
-#dashboard .container:nth-of-type(2){
-    grid-row: span 2;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 25px;
+    min-height: calc(100vh - 60px);
+    align-items: stretch;
 }
 
-#dashboard .container{
-    background-color: #ffffffaa;
+/* Containers */
+.container {
+    background: var(--card-bg);
+    backdrop-filter: blur(25px) saturate(190%);
+    -webkit-backdrop-filter: blur(25px) saturate(190%);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 25px;
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                border-color 0.3s ease, 
+                box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.container:hover {
+    border-color: var(--card-border-hover);
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6), 
+                0 0 40px -10px var(--accent-glow);
+}
+
+/* Calendar Container specific layout */
+#calendar-container {
+    height: 100%;
+    min-width: 0;
+}
+
+.container-header-link {
+    text-decoration: none;
+    color: inherit;
+    display: inline-block;
+}
+
+.container .head {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    letter-spacing: -0.02em;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.head-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--accent-color);
+}
+
+.container .content {
+    flex-grow: 1;
     overflow: hidden;
 }
 
-#dashboard .container > div{
+/* Google Calendar Iframe Styling (with dark inversion) */
+#calendar-wrapper {
     width: 100%;
-}
-
-#dashboard .container .head{
-    height: 30px;
-    width: calc( 100% - 60px );
-    padding: 15px 30px;
-    border-bottom: 1px solid #000000;
-    font-size: 30px;
-    line-height: 1;
-    position: relative;
-    color: var(--dark);
-}
-
-#dashboard .container .head:hover{
-    background: #ffffff44;
-}
-
-#dashboard a{
-    text-decoration: none !important
-}
-
-#dashboard .container .head .counter{
-    background-color: var(--light);
-    border-radius: 50%;
-    padding: 7px;
-    font-size: 12px;
-    color: var(--white);
-    position: absolute;
-    right: 30px;
-    top: 18px;
-}
-
-#dashboard .container .head .counter:empty{
-    display: none;
-}
-
-#dashboard .container .content{
-    overflow-y: auto;
-}
-
-#todo-wrapper{
-    height: calc( 100% - 90px );
-}
-
-#todo-wrapper,
-#apps-wrapper{
-    width: calc( 100% - 60px ) !important;
-    padding: 15px 30px;
-}
-
-#todo-wrapper > div.task{
-    width: calc( 100% - 30px );
-    height: fit-content;
-    background: var(--white);
-    margin: 15px 0;
-    padding: 10px 15px 20px;
-    position: relative;
-    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-}
-
-#todo-wrapper > div.task.has-desc{
-    cursor: pointer;
-}
-
-#todo-wrapper > div.task.has-desc::after{
-    content: "⇾";
-    position: absolute;
-    top: 5px;
-    right: 10px;
-    transition: transform .2s ease;
-}
-
-#todo-wrapper > div.task.has-desc.active::after{
-    transform: rotate(90deg);
-}
-
-#todo-wrapper > div.task-project-headline{
-    width: calc( 100% - 30px) ;
-    height: 20px;
-    margin: 60px 0 15px;
-    background: var(--white);
-    padding: 10px 15px 15px;
-    font-size: 20px;
-    background: var(--light);
-    color: var(--white);
-    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-}
-
-#todo-wrapper > div.task-project-headline:first-of-type{
-    margin-top: 15px;
-}
-
-#todo-wrapper .task:not(.active) .task-desc{
-    display: none;
-}
-
-#todo-wrapper .task.active .task-desc{
-    font-size: 13px;
-    margin-left: 30px;
-}
-
-#todo-wrapper .task-labels{
-    margin-bottom: 10px;
-}
-
-#todo-wrapper .task-labels span:first-of-type{ margin-left: 0; }
-#todo-wrapper .task-labels span:last-of-type{ margin-right: 0; }
-
-#todo-wrapper .task-labels span{
-    font-size: 12px;
-    padding: 5px 10px;
-    border-radius: 10px;
-    margin: 5px;
-    color: var(--white);
-}
-
-#todo-wrapper span.task-deadline{
-    color: var(--dark);
-    font-size: 12px;
-    position: absolute;
-    right: 5px;
-    bottom: 5px;
-}
-
-#clock-wrapper{
-    text-align: center;
-    position: relative;
-    width: 100%;
-    min-height: 120px;
     height: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
 }
 
-#clock{
-    top: 50%;
-    transform: translateY(-50%);
-    width: 100%;
-    position: absolute;
+#calendar-wrapper iframe {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    border: none;
+    border-radius: 16px;
+    filter: var(--calendar-filter);
+    background-color: transparent;
 }
 
-#clock-time{
-    font-size: 60px;
+/* Right Column Stack */
+.right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
 }
 
-#clock-date{
-    font-size: 20px;
+/* Clock Card */
+.clock-container {
+    padding: 35px 25px;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.6) 0%, rgba(10, 14, 23, 0.6) 100%);
 }
 
-#toggl{
-    width: 100%;
-    position: absolute;
-    bottom: 10px;
+#clock-time {
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #ffffff 40%, #c7d2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+    font-variant-numeric: tabular-nums;
 }
 
-#covid{
-    width: 100%;
-    position: absolute;
-    top: 10px;
+#clock-date {
+    font-size: 15px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 10px;
 }
 
-#apps-wrapper{
+/* Apps/Links Widget */
+#apps-container {
+    flex-grow: 1;
+}
+
+#apps-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Custom Scrollbar for Apps list */
+#apps-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+#apps-wrapper::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 3px;
+}
+
+#apps-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+#apps-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.app-category {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.category-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-left: 2px;
+}
+
+.app-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, 70px);
-    grid-template-rows: repeat(auto-fit, 80px);
-    row-gap: 40px;
-    column-gap: 10px;
-    justify-items: center;
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: 15px;
 }
 
-#apps-wrapper > a{
-    width: 70px;
-    height: 70px;
-    background-color: var(--white);
-    display: block;
+/* Styled App Launcher Link */
+.app-grid a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
     position: relative;
-    border-radius: 20px;
-    background-size: 60px;
-    background-position: center;
+    padding: 10px 5px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    height: 76px;
+    width: 76px;
+    background-size: 40px;
+    background-position: center 10px;
     background-repeat: no-repeat;
-    transition: background-size .2s ease;
-    margin-bottom: 10px;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                background-color 0.25s,
+                border-color 0.25s,
+                box-shadow 0.3s;
 }
 
-#apps-wrapper > a:hover{
-    background-size: 70px;
+.app-grid a:hover {
+    transform: translateY(-6px);
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
 }
 
-#apps-wrapper > a:after{
+/* Hover name overlay - clean iOS layout style */
+.app-grid a::after {
     content: attr(data-name);
     position: absolute;
-    bottom: -20px;
-    font-size: 12px;
-    width: 70px;
-    color: var(--dark);
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    pointer-events: none;
+    bottom: 6px;
+    left: 0;
+    width: 100%;
     text-align: center;
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 4px;
+    transition: color 0.25s;
 }
 
-#radio-frame{
-    width: 300px;
-    height: 100px;
-    position: fixed;
-    right: -200px;
-    bottom: 30px;
+.app-grid a:hover::after {
+    color: var(--text-primary);
 }
 
-#reload-bg{
-    width: 100px;
-    height: 100px;
+/* Floating Radio Panel & Button */
+#radio-toggle {
     position: fixed;
-    top: 0;
-    right: 0;
-    cursor: alias;
+    bottom: 45px;
+    right: 25px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--card-border);
+    color: var(--text-primary);
+    cursor: pointer;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1001;
+}
+
+#radio-toggle svg {
+    width: 24px;
+    height: 24px;
+    transition: transform 0.3s ease;
+}
+
+#radio-toggle:hover {
+    transform: scale(1.1) rotate(5deg);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 20px var(--accent-glow);
+    background: rgba(30, 41, 59, 0.85);
+}
+
+#radio-toggle.active {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 25px rgba(99, 102, 241, 0.4);
+}
+
+#radio-toggle.active svg {
+    transform: rotate(180deg);
+}
+
+#radio-panel {
+    position: fixed;
+    bottom: 115px;
+    right: 25px;
+    width: 320px;
+    height: 160px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px) scale(0.95);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#radio-panel.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0) scale(1);
+}
+
+.radio-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.radio-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--accent-color);
+}
+
+.radio-content {
+    flex-grow: 1;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+#radio-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* Meeting Portal / Alerts */
+#meeting-portal {
+    position: fixed;
+    bottom: 25px;
+    left: 25px;
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+}
+
+#meeting-portal.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+}
+
+.meeting-card {
+    background: rgba(16, 185, 129, 0.1);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 20px;
+    padding: 20px;
+    width: 320px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 
+                0 0 25px var(--emerald-glow);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: pulseGlow 3s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 0 20px rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.25);
+    }
+    50% {
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 0 30px rgba(16, 185, 129, 0.35);
+        border-color: rgba(16, 185, 129, 0.5);
+    }
+}
+
+.meeting-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--emerald-green);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--emerald-green);
+    animation: blink 1.5s infinite ease-in-out;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 0.3; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+
+.meeting-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--emerald-green);
+    letter-spacing: 0.05em;
+}
+
+.meeting-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.meeting-time {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.meeting-btn {
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: var(--emerald-green);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    transition: all 0.25s ease;
+}
+
+.meeting-btn:hover {
+    background-color: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+}
+
+.btn-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Media Queries for responsive behavior */
+@media (max-width: 1024px) {
+    #dashboard {
+        width: 100%;
+        grid-template-columns: 1fr;
+        padding: 25px;
+        gap: 25px;
+    }
+    
+    #calendar-container {
+        height: 600px;
+    }
+}
+
+@media (max-width: 640px) {
+    #dashboard {
+        padding: 15px;
+        gap: 15px;
+    }
+    
+    #clock-time {
+        font-size: 40px;
+    }
+    
+    #calendar-container {
+        height: 480px;
+    }
+    
+    #radio-panel {
+        width: calc(100vw - 50px);
+        right: 25px;
+    }
+}
+
+/* Smooth Transitions */
+body, .container, #bg-overlay, #calendar-wrapper iframe, .app-grid a, #radio-toggle, #radio-panel {
+    transition: background-color 0.4s ease, 
+                background 0.4s ease, 
+                border-color 0.4s ease, 
+                color 0.4s ease, 
+                box-shadow 0.4s ease, 
+                filter 0.4s ease;
 }
