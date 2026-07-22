@@ -79,6 +79,19 @@ body::after {
     align-items: stretch;
 }
 
+/* Without a calendar embed configured, #calendar-container is display:none and grid auto-placement
+   would otherwise squeeze .right-column into the first (wider) track alone, leaving dead space on
+   the right. Switch to a single, centered column instead. */
+#dashboard.no-calendar {
+    grid-template-columns: 1fr;
+    justify-items: center;
+}
+
+#dashboard.no-calendar .right-column {
+    width: 100%;
+    max-width: 560px;
+}
+
 /* Containers */
 .container {
     background: var(--card-bg);
@@ -1043,9 +1056,15 @@ body::after {
         padding: 25px;
         gap: 25px;
     }
-    
+
     #calendar-container {
         height: 600px;
+    }
+
+    /* Already single-column and full-width here regardless of the calendar, so drop the
+       desktop-only centering/width cap from #dashboard.no-calendar. */
+    #dashboard.no-calendar .right-column {
+        max-width: none;
     }
 }
 

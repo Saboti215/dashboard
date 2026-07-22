@@ -297,6 +297,9 @@ function loadCalendar(settings) {
     const iframe = (settings.calendarIframe || "").trim();
     $("#calendar-wrapper").html(iframe);
     $("#calendar-container").toggleClass("feature-hidden", !iframe);
+    // Without a calendar, #dashboard would auto-place .right-column into the first (wider) grid
+    // track, leaving dead space on the right. This class switches to a centered single column.
+    $("#dashboard").toggleClass("no-calendar", !iframe);
 }
 
 // ---------------------------------------------------------------------------------------------
