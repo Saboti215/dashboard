@@ -186,6 +186,54 @@ body::after {
     margin-top: 10px;
 }
 
+/* Brave Search Bar */
+#search-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    transition: border-color 0.25s, background-color 0.25s, box-shadow 0.25s;
+}
+
+#search-form:focus-within {
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+#search-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+#search-input {
+    flex-grow: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 15px;
+}
+
+#search-input::placeholder {
+    color: var(--text-secondary);
+}
+
+/* Remove native search input decorations */
+#search-input::-webkit-search-decoration,
+#search-input::-webkit-search-cancel-button,
+#search-input::-webkit-search-results-button,
+#search-input::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+}
+
 /* Apps/Links Widget */
 #apps-container {
     flex-grow: 1;

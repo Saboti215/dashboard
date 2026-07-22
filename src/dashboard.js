@@ -7,9 +7,88 @@ $(document).ready(() => {
     loadMeetings();
     loadCalendar();
     loadClock();
+    loadBookmarks();
     loadCsAutoLogin();
     loadRadio();
+    loadSearch();
 });
+
+function loadSearch() {
+    // Ensure the search bar has focus even if the browser tries to focus the omnibox instead
+    $("#search-input").trigger("focus");
+}
+
+function loadBookmarks() {
+    if (typeof chrome === "undefined" || !chrome.bookmarks) return;
+
+    chrome.bookmarks.getTree(nodes => {
+        const root = nodes[0];
+        const bar = (root.children || []).find(n => n.id === "1") || (root.children || [])[0];
+        if (!bar || !bar.children) return;
+
+        const folders = [];
+        const loose = [];
+
+        bar.children.forEach(node => {
+            if (node.children) {
+                folders.push(node);
+            } else if (node.url) {
+                loose.push(node);
+            }
+        });
+
+        let html = "";
+
+        // Loose bookmarks directly on the bookmarks bar (not in a folder)
+        if (loose.length) {
+            html += renderBookmarkCategory("Allgemein", loose);
+        }
+
+        // Every folder becomes its own category, just like the previous static sections
+        folders.forEach(folder => {
+            const bookmarks = folder.children.filter(n => n.url);
+            if (bookmarks.length) {
+                html += renderBookmarkCategory(folder.title || "Sonstiges", bookmarks);
+            }
+        });
+
+        $("#apps-wrapper").html(html);
+    });
+}
+
+function renderBookmarkCategory(title, bookmarks) {
+    const links = bookmarks.map(b => {
+        const name = escapeHtml(b.title || b.url);
+        const url = escapeHtml(b.url);
+        const icon = escapeHtml(getFaviconUrl(b.url));
+        return `<a href="${url}" data-name="${name}" style="background-image: url(${icon});"></a>`;
+    }).join("");
+
+    return `
+        <div class="app-category">
+            <div class="category-title">${escapeHtml(title)}</div>
+            <div class="app-grid">${links}</div>
+        </div>
+    `;
+}
+
+function getFaviconUrl(pageUrl) {
+    // Uses Chromium's built-in favicon store (requires the "favicon" permission),
+    // so icons are served from the browser's local cache instead of being re-fetched from the web.
+    const url = new URL(chrome.runtime.getURL("/_favicon/"));
+    url.searchParams.set("pageUrl", pageUrl);
+    url.searchParams.set("size", "64");
+    return url.toString();
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
 
 function loadMeetings() {
     if (updateMeetings()) {
@@ -149,12 +228,11 @@ function loadBackground() {
 }
 
 function loadCsAutoLogin() {
-    if (typeof CS_USERNAME === "undefined" || typeof CS_PASSWORD === "undefined") {
-        $("a[data-name=CodingSpace]").remove();
-        return;
-    }
+    if (typeof CS_USERNAME === "undefined" || typeof CS_PASSWORD === "undefined") return;
 
-    $("a[data-name=CodingSpace]").on("click", (e) => {
+    // Bookmarks are rendered asynchronously, so bind via delegation on a static ancestor
+    // instead of the (not yet existing) anchor elements themselves.
+    $("#apps-wrapper").on("click", "a[data-name=CodingSpace]", (e) => {
         e.preventDefault();
         const form = `<form id="cs-login-form" action="https://internal.codeclubmg.de/?page=login" method="post" style="display: none;">
             <input name="login[userName]" value="${CS_USERNAME}">
@@ -166,7 +244,7 @@ function loadCsAutoLogin() {
         $("form#cs-login-form").submit();
     });
 
-    $("a[data-name=CodingSpaceTest]").on("click", (e) => {
+    $("#apps-wrapper").on("click", "a[data-name=CodingSpaceTest]", (e) => {
         e.preventDefault();
         const form = `<form id="cs-login-form" action="https://test.internal.codeclubmg.de/?page=login" method="post" style="display: none;">
             <input name="login[userName]" value="${CS_USERNAME}">
