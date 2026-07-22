@@ -113,6 +113,14 @@ function renderPomodoroTick() {
             // ".running" (not ".active", which the dashboard page uses for "panel is open") so the
             // pulse indicator and the open/close state never fight over the same class.
             $("#pomodoro-toggle").toggleClass("running", state.running);
+
+            // Only present on the dashboard page (a no-op on the popup, which has no #pomodoro-toggle
+            // and thus no #pomodoro-badge either). Shown only while running AND the panel is closed —
+            // the panel itself already shows the full countdown once it's open.
+            const panelOpen = $("#pomodoro-panel").hasClass("active");
+            $("#pomodoro-badge")
+                .text(formatPomodoroTime(remainingMs))
+                .toggleClass("visible", state.running && !panelOpen);
         });
     });
 }

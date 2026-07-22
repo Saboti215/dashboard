@@ -89,6 +89,14 @@ const TRANSLATIONS = {
         settings: {
             toggleTitle: "Einstellungen",
             modalTitle: "Einstellungen",
+            section: {
+                general: "Allgemein",
+                search: "Suche & KI",
+                calendar: "Kalender",
+                radio: "Radio",
+                meetings: "Meetings",
+                pomodoro: "Pomodoro"
+            },
             language: "Sprache",
             userName: "Dein Name",
             searchEngine: "Suchmaschine",
@@ -101,6 +109,7 @@ const TRANSLATIONS = {
             calendarHint: "Google Kalender → Einstellungen → \"Kalender integrieren\" → den Code aus dem <iframe>-Feld hier einfügen.",
             radioEnabled: "Radio-Player anzeigen",
             tuneInId: "TuneIn Sender-ID",
+            tuneInHint: "Die Sender-ID aus der URL eines TuneIn-Senders, z. B. \"s34682\" aus tunein.com/radio/.../s34682.",
             meetingsEnabled: "Meeting Quick-Join anzeigen",
             pomodoroEnabled: "Pomodoro-Timer anzeigen",
             pomodoroWork: "Arbeitsdauer (Min.)",
@@ -186,6 +195,14 @@ const TRANSLATIONS = {
         settings: {
             toggleTitle: "Settings",
             modalTitle: "Settings",
+            section: {
+                general: "General",
+                search: "Search & AI",
+                calendar: "Calendar",
+                radio: "Radio",
+                meetings: "Meetings",
+                pomodoro: "Pomodoro"
+            },
             language: "Language",
             userName: "Your name",
             searchEngine: "Search engine",
@@ -198,6 +215,7 @@ const TRANSLATIONS = {
             calendarHint: "Google Calendar → Settings → \"Integrate calendar\" → paste the code from the <iframe> field here.",
             radioEnabled: "Show radio player",
             tuneInId: "TuneIn station ID",
+            tuneInHint: "The station ID from a TuneIn station's URL, e.g. \"s34682\" from tunein.com/radio/.../s34682.",
             meetingsEnabled: "Show meeting quick-join",
             pomodoroEnabled: "Show Pomodoro timer",
             pomodoroWork: "Focus duration (min)",

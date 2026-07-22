@@ -133,6 +133,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
+            <span id="pomodoro-badge"></span>
         </button>
 
         <!-- Meeting Container Placeholder (will be animated in by JS). Removed entirely by
@@ -246,102 +247,149 @@
                 </div>
 
                 <form id="settings-form" class="modal-form">
-                    <div class="form-row">
-                        <label for="settings-language" data-i18n="settings.language">Sprache</label>
-                        <select id="settings-language">
-                            <option value="de">Deutsch</option>
-                            <option value="en">English</option>
-                        </select>
-                    </div>
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.general">Allgemein</h3>
 
-                    <div class="form-row">
-                        <label for="settings-user-name" data-i18n="settings.userName">Dein Name</label>
-                        <input type="text" id="settings-user-name" autocomplete="off">
-                    </div>
-
-                    <div class="form-row">
-                        <label for="settings-search-engine" data-i18n="settings.searchEngine">Suchmaschine</label>
-                        <select id="settings-search-engine">
-                            <option value="brave">Brave</option>
-                            <option value="google">Google</option>
-                            <option value="duckduckgo">DuckDuckGo</option>
-                            <option value="bing">Bing</option>
-                            <option value="startpage">Startpage</option>
-                            <option value="ecosia">Ecosia</option>
-                        </select>
-                    </div>
-
-                    <div class="form-row">
-                        <label for="settings-ai-assistant" data-i18n="settings.aiAssistant">KI-Assistent</label>
-                        <select id="settings-ai-assistant">
-                            <option value="gemini">Gemini</option>
-                            <option value="chatgpt">ChatGPT</option>
-                            <option value="claude">Claude</option>
-                            <option value="copilot">Copilot</option>
-                            <option value="perplexity">Perplexity</option>
-                        </select>
-                    </div>
-
-                    <div class="form-row">
-                        <label for="settings-accent-color" data-i18n="settings.accentColor">Akzentfarbe</label>
-                        <input type="color" id="settings-accent-color">
-                    </div>
-
-                    <div class="form-row">
-                        <label for="settings-background-file" data-i18n="settings.background">Hintergrundbild</label>
-                        <div class="form-row-file">
-                            <img id="settings-background-preview" alt="">
-                            <input type="file" id="settings-background-file" accept="image/*">
-                            <button type="button" id="settings-background-remove" class="btn btn-secondary btn-small" data-i18n="settings.backgroundRemove">Entfernen</button>
+                        <div class="form-row">
+                            <label for="settings-language" data-i18n="settings.language">Sprache</label>
+                            <select id="settings-language">
+                                <option value="de">Deutsch</option>
+                                <option value="en">English</option>
+                            </select>
                         </div>
-                        <div class="form-row-hint" data-i18n="settings.backgroundHint">Ohne Bild wird nur die Hintergrundfarbe verwendet.</div>
-                    </div>
 
-                    <div class="form-row">
-                        <label for="settings-calendar-iframe" data-i18n="settings.calendarIframe">Kalender-Einbettung</label>
-                        <textarea id="settings-calendar-iframe" rows="3" placeholder="<iframe src=&quot;https://calendar.google.com/...&quot; ...></iframe>"></textarea>
-                        <div class="form-row-hint" data-i18n="settings.calendarHint">Google Kalender → Einstellungen → "Kalender integrieren" → den Code aus dem &lt;iframe&gt;-Feld hier einfügen.</div>
-                    </div>
-
-                    <div class="form-row form-row-checkbox">
-                        <input type="checkbox" id="settings-radio-enabled">
-                        <label for="settings-radio-enabled" data-i18n="settings.radioEnabled">Radio-Player anzeigen</label>
-                    </div>
-
-                    <div class="form-row">
-                        <label for="settings-tunein-id" data-i18n="settings.tuneInId">TuneIn Sender-ID</label>
-                        <input type="text" id="settings-tunein-id" placeholder="s12345">
-                    </div>
-
-                    <div class="form-row form-row-checkbox">
-                        <input type="checkbox" id="settings-meetings-enabled">
-                        <label for="settings-meetings-enabled" data-i18n="settings.meetingsEnabled">Meeting Quick-Join anzeigen</label>
-                    </div>
-
-                    <div class="form-row form-row-checkbox">
-                        <input type="checkbox" id="settings-pomodoro-enabled">
-                        <label for="settings-pomodoro-enabled" data-i18n="settings.pomodoroEnabled">Pomodoro-Timer anzeigen</label>
-                    </div>
-
-                    <div class="form-row form-row-split">
-                        <div>
-                            <label for="settings-pomodoro-work" data-i18n="settings.pomodoroWork">Arbeitsdauer (Min.)</label>
-                            <input type="number" id="settings-pomodoro-work" min="1" max="180">
+                        <div class="form-row">
+                            <label for="settings-user-name" data-i18n="settings.userName">Dein Name</label>
+                            <input type="text" id="settings-user-name" autocomplete="off">
                         </div>
-                        <div>
-                            <label for="settings-pomodoro-short-break" data-i18n="settings.pomodoroShortBreak">Kurze Pause (Min.)</label>
-                            <input type="number" id="settings-pomodoro-short-break" min="1" max="180">
+
+                        <div class="form-row">
+                            <label for="settings-accent-color" data-i18n="settings.accentColor">Akzentfarbe</label>
+                            <input type="color" id="settings-accent-color">
+                        </div>
+
+                        <div class="form-row">
+                            <label for="settings-background-file">
+                                <span data-i18n="settings.background">Hintergrundbild</span>
+                                <button type="button" class="info-icon" tabindex="-1" data-i18n-title="settings.backgroundHint" title="Ohne Bild wird nur die Hintergrundfarbe verwendet.">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
+                            </label>
+                            <div class="form-row-file">
+                                <img id="settings-background-preview" alt="">
+                                <input type="file" id="settings-background-file" accept="image/*">
+                                <button type="button" id="settings-background-remove" class="btn btn-secondary btn-small" data-i18n="settings.backgroundRemove">Entfernen</button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-row form-row-split">
-                        <div>
-                            <label for="settings-pomodoro-long-break" data-i18n="settings.pomodoroLongBreak">Lange Pause (Min.)</label>
-                            <input type="number" id="settings-pomodoro-long-break" min="1" max="180">
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.search">Suche &amp; KI</h3>
+
+                        <div class="form-row">
+                            <label for="settings-search-engine" data-i18n="settings.searchEngine">Suchmaschine</label>
+                            <select id="settings-search-engine">
+                                <option value="brave">Brave</option>
+                                <option value="google">Google</option>
+                                <option value="duckduckgo">DuckDuckGo</option>
+                                <option value="bing">Bing</option>
+                                <option value="startpage">Startpage</option>
+                                <option value="ecosia">Ecosia</option>
+                            </select>
                         </div>
-                        <div>
-                            <label for="settings-pomodoro-rounds" data-i18n="settings.pomodoroRounds">Runden bis lange Pause</label>
-                            <input type="number" id="settings-pomodoro-rounds" min="1" max="12">
+
+                        <div class="form-row">
+                            <label for="settings-ai-assistant" data-i18n="settings.aiAssistant">KI-Assistent</label>
+                            <select id="settings-ai-assistant">
+                                <option value="gemini">Gemini</option>
+                                <option value="chatgpt">ChatGPT</option>
+                                <option value="claude">Claude</option>
+                                <option value="copilot">Copilot</option>
+                                <option value="perplexity">Perplexity</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.calendar">Kalender</h3>
+
+                        <div class="form-row">
+                            <label for="settings-calendar-iframe">
+                                <span data-i18n="settings.calendarIframe">Kalender-Einbettung</span>
+                                <button type="button" class="info-icon" tabindex="-1" data-i18n-title="settings.calendarHint" title='Google Kalender → Einstellungen → "Kalender integrieren" → den Code aus dem &lt;iframe&gt;-Feld hier einfügen.'>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
+                            </label>
+                            <textarea id="settings-calendar-iframe" rows="3" placeholder="<iframe src=&quot;https://calendar.google.com/...&quot; ...></iframe>"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.radio">Radio</h3>
+
+                        <div class="form-row form-row-checkbox">
+                            <input type="checkbox" id="settings-radio-enabled">
+                            <label for="settings-radio-enabled" data-i18n="settings.radioEnabled">Radio-Player anzeigen</label>
+                        </div>
+
+                        <div class="settings-subfields" id="settings-radio-details">
+                            <div class="form-row">
+                                <label for="settings-tunein-id">
+                                    <span data-i18n="settings.tuneInId">TuneIn Sender-ID</span>
+                                    <button type="button" class="info-icon" tabindex="-1" data-i18n-title="settings.tuneInHint" title='Die Sender-ID aus der URL eines TuneIn-Senders, z. B. "s34682" aus tunein.com/radio/.../s34682.'>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </button>
+                                </label>
+                                <input type="text" id="settings-tunein-id" placeholder="s12345">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.meetings">Meetings</h3>
+
+                        <div class="form-row form-row-checkbox">
+                            <input type="checkbox" id="settings-meetings-enabled">
+                            <label for="settings-meetings-enabled" data-i18n="settings.meetingsEnabled">Meeting Quick-Join anzeigen</label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.pomodoro">Pomodoro</h3>
+
+                        <div class="form-row form-row-checkbox">
+                            <input type="checkbox" id="settings-pomodoro-enabled">
+                            <label for="settings-pomodoro-enabled" data-i18n="settings.pomodoroEnabled">Pomodoro-Timer anzeigen</label>
+                        </div>
+
+                        <div class="settings-subfields" id="settings-pomodoro-details">
+                            <div class="form-row form-row-split">
+                                <div>
+                                    <label for="settings-pomodoro-work" data-i18n="settings.pomodoroWork">Arbeitsdauer (Min.)</label>
+                                    <input type="number" id="settings-pomodoro-work" min="1" max="180">
+                                </div>
+                                <div>
+                                    <label for="settings-pomodoro-short-break" data-i18n="settings.pomodoroShortBreak">Kurze Pause (Min.)</label>
+                                    <input type="number" id="settings-pomodoro-short-break" min="1" max="180">
+                                </div>
+                            </div>
+
+                            <div class="form-row form-row-split">
+                                <div>
+                                    <label for="settings-pomodoro-long-break" data-i18n="settings.pomodoroLongBreak">Lange Pause (Min.)</label>
+                                    <input type="number" id="settings-pomodoro-long-break" min="1" max="180">
+                                </div>
+                                <div>
+                                    <label for="settings-pomodoro-rounds" data-i18n="settings.pomodoroRounds">Runden bis lange Pause</label>
+                                    <input type="number" id="settings-pomodoro-rounds" min="1" max="12">
+                                </div>
+                            </div>
                         </div>
                     </div>
 

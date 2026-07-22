@@ -332,13 +332,16 @@ function loadPomodoro(settings) {
     $("#pomodoro-toggle").on("click", function() {
         $("#pomodoro-panel").toggleClass("active");
         $(this).toggleClass("active");
+        renderPomodoroTick(); // updates the badge immediately instead of waiting for the next tick
     });
 
     // Close panel when clicking outside it
     $(document).on("click", function(event) {
         if (!$(event.target).closest("#pomodoro-panel, #pomodoro-toggle").length) {
+            const wasOpen = $("#pomodoro-panel").hasClass("active");
             $("#pomodoro-panel").removeClass("active");
             $("#pomodoro-toggle").removeClass("active");
+            if (wasOpen) renderPomodoroTick();
         }
     });
 
@@ -346,8 +349,8 @@ function loadPomodoro(settings) {
         chrome.windows.create({
             url: chrome.runtime.getURL("pomodoro.html"),
             type: "popup",
-            width: 300,
-            height: 420
+            width: 320,
+            height: 330
         });
     });
 }
@@ -740,6 +743,16 @@ function loadSettingsModal(settings) {
         showBackgroundPreview(null);
     });
 
+    // Hide each feature's detail fields while its own "show ..." checkbox is unchecked, so the
+    // form only shows settings that currently do anything.
+    $("#settings-radio-enabled").on("change", function() {
+        $("#settings-radio-details").toggle(this.checked);
+    });
+
+    $("#settings-pomodoro-enabled").on("change", function() {
+        $("#settings-pomodoro-details").toggle(this.checked);
+    });
+
     $("#settings-form").on("submit", (e) => {
         e.preventDefault();
 
@@ -797,9 +810,11 @@ function fillSettingsForm(settings) {
     $("#settings-accent-color").val(settings.accentColor || "#6366f1");
     $("#settings-calendar-iframe").val(settings.calendarIframe || "");
     $("#settings-radio-enabled").prop("checked", settings.radioEnabled !== false);
+    $("#settings-radio-details").toggle(settings.radioEnabled !== false);
     $("#settings-tunein-id").val(settings.tuneInId || "");
     $("#settings-meetings-enabled").prop("checked", settings.meetingsEnabled !== false);
     $("#settings-pomodoro-enabled").prop("checked", settings.pomodoroEnabled !== false);
+    $("#settings-pomodoro-details").toggle(settings.pomodoroEnabled !== false);
     $("#settings-pomodoro-work").val(settings.pomodoroWorkMinutes || 25);
     $("#settings-pomodoro-short-break").val(settings.pomodoroShortBreakMinutes || 5);
     $("#settings-pomodoro-long-break").val(settings.pomodoroLongBreakMinutes || 15);
