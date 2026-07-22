@@ -186,16 +186,27 @@ body::after {
     margin-top: 10px;
 }
 
-/* Brave Search Bar */
+/* Search + Gemini Widget */
+#search-container {
+    padding: 15px;
+}
+
+#search-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow: visible;
+}
+
 #search-form {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-grow: 1;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--card-border);
     border-radius: 14px;
     padding: 12px 16px;
-    margin-bottom: 20px;
     transition: border-color 0.25s, background-color 0.25s, box-shadow 0.25s;
 }
 
@@ -232,6 +243,37 @@ body::after {
 #search-input::-webkit-search-results-button,
 #search-input::-webkit-search-results-decoration {
     -webkit-appearance: none;
+}
+
+/* Gemini quick-start button */
+#gemini-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--card-border);
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                background-color 0.25s,
+                border-color 0.25s,
+                box-shadow 0.3s;
+}
+
+#gemini-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+#gemini-btn:hover {
+    transform: translateY(-3px);
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: var(--card-border-hover);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
 }
 
 /* Apps/Links Widget */
