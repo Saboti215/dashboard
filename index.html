@@ -94,5 +94,95 @@
 
         <!-- Meeting Container Placeholder (will be animated in by JS) -->
         <div id="meeting-portal"></div>
+
+        <button id="meetings-toggle" title="Meetings verwalten">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+        </button>
+
+        <!-- Meetings Management Modal -->
+        <div id="meetings-modal">
+            <div id="meetings-modal-backdrop"></div>
+            <div id="meetings-modal-card">
+                <div class="modal-header">
+                    <span>Meetings verwalten</span>
+                    <button type="button" id="meetings-modal-close" title="Schließen">&times;</button>
+                </div>
+
+                <div id="meetings-list"></div>
+
+                <form id="meeting-form">
+                    <input type="hidden" id="meeting-id">
+                    <input type="hidden" id="meeting-recurrence" value="weekly">
+
+                    <div class="form-row">
+                        <label for="meeting-name">Name</label>
+                        <input type="text" id="meeting-name" required>
+                    </div>
+
+                    <div class="form-row form-row-split">
+                        <div>
+                            <label for="meeting-type">Typ</label>
+                            <select id="meeting-type">
+                                <option value="zoom">Zoom</option>
+                                <option value="teams">MS Teams</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="meeting-password">Passwort (optional)</label>
+                            <input type="text" id="meeting-password" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="meeting-link">Link</label>
+                        <input type="url" id="meeting-link" placeholder="https://..." required>
+                    </div>
+
+                    <div class="form-row form-row-split">
+                        <div>
+                            <label for="meeting-start">Start</label>
+                            <input type="time" id="meeting-start" required>
+                        </div>
+                        <div>
+                            <label for="meeting-end">Ende</label>
+                            <input type="time" id="meeting-end" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Wiederholung</label>
+                        <div class="segmented" id="recurrence-toggle">
+                            <button type="button" data-value="weekly" class="active">Wöchentlich</button>
+                            <button type="button" data-value="once">Einmalig</button>
+                        </div>
+                    </div>
+
+                    <div class="form-row" id="weekday-row">
+                        <label for="meeting-weekday">Wochentag</label>
+                        <select id="meeting-weekday">
+                            <option value="1">Montag</option>
+                            <option value="2">Dienstag</option>
+                            <option value="3">Mittwoch</option>
+                            <option value="4">Donnerstag</option>
+                            <option value="5">Freitag</option>
+                            <option value="6">Samstag</option>
+                            <option value="0">Sonntag</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row" id="date-row" style="display: none;">
+                        <label for="meeting-date">Datum</label>
+                        <input type="date" id="meeting-date">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="meeting-form-cancel">Neu / Zurücksetzen</button>
+                        <button type="submit" id="meeting-form-submit">Speichern</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </body>
 </html>

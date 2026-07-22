@@ -1,11 +1,11 @@
 {
   "name": "Dashboard new Tab",
   "description": "Override the new tab page with my dashboard",
-  "version": "0.2",
+  "version": "0.3",
   "incognito": "split",
   "chrome_url_overrides": {
     "newtab": "index.html"
   },
-  "permissions": ["bookmarks", "favicon"],
+  "permissions": ["bookmarks", "favicon", "storage"],
   "manifest_version": 3
 }
