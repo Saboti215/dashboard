@@ -21,6 +21,12 @@
     padding: 0;
 }
 
+/* Toggled by Settings (e.g. "show radio player") instead of removing elements outright, so a
+   feature can be switched back on at runtime without reloading the page. */
+.feature-hidden {
+    display: none !important;
+}
+
 body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     color: var(--text-primary);
@@ -184,6 +190,14 @@ body::after {
     text-transform: uppercase;
     letter-spacing: 0.1em;
     margin-top: 10px;
+}
+
+/* Optional greeting line, only shown once a name is set in Settings */
+#greeting {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: 14px;
+    display: none;
 }
 
 /* Search + Gemini Widget */
@@ -531,8 +545,41 @@ body::after {
     background: rgba(30, 41, 59, 0.85);
 }
 
-/* Meetings Management Modal */
-#meetings-modal {
+/* Floating Settings Button (top-right corner) */
+#settings-toggle {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--card-border);
+    color: var(--text-primary);
+    cursor: pointer;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1001;
+}
+
+#settings-toggle svg {
+    width: 20px;
+    height: 20px;
+}
+
+#settings-toggle:hover {
+    transform: scale(1.1) rotate(45deg);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 20px var(--accent-glow);
+    background: rgba(30, 41, 59, 0.85);
+}
+
+/* Generic Modal (used by both the Meetings and the Settings modal) */
+.modal {
     position: fixed;
     inset: 0;
     z-index: 1100;
@@ -544,19 +591,19 @@ body::after {
     transition: opacity 0.3s ease;
 }
 
-#meetings-modal.active {
+.modal.active {
     opacity: 1;
     pointer-events: all;
 }
 
-#meetings-modal-backdrop {
+.modal-backdrop {
     position: absolute;
     inset: 0;
     background: rgba(5, 7, 12, 0.7);
     backdrop-filter: blur(8px);
 }
 
-#meetings-modal-card {
+.modal-card {
     position: relative;
     width: min(480px, calc(100vw - 50px));
     max-height: 85vh;
@@ -572,7 +619,7 @@ body::after {
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-#meetings-modal.active #meetings-modal-card {
+.modal.active .modal-card {
     transform: translateY(0) scale(1);
 }
 
@@ -587,7 +634,7 @@ body::after {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-#meetings-modal-close {
+.modal-close {
     background: none;
     border: none;
     color: var(--text-secondary);
@@ -599,7 +646,7 @@ body::after {
     transition: color 0.2s, background-color 0.2s;
 }
 
-#meetings-modal-close:hover {
+.modal-close:hover {
     color: var(--text-primary);
     background: rgba(255, 255, 255, 0.06);
 }
@@ -715,7 +762,8 @@ body::after {
 }
 
 .form-row input,
-.form-row select {
+.form-row select,
+.form-row textarea {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--card-border);
     border-radius: 12px;
@@ -727,8 +775,14 @@ body::after {
     transition: border-color 0.25s, background-color 0.25s;
 }
 
+.form-row textarea {
+    resize: vertical;
+    min-height: 70px;
+}
+
 .form-row input:focus,
-.form-row select:focus {
+.form-row select:focus,
+.form-row textarea:focus {
     border-color: var(--accent-color);
     background: rgba(255, 255, 255, 0.06);
 }
@@ -736,6 +790,70 @@ body::after {
 .form-row select option {
     background: var(--bg-dark);
     color: var(--text-primary);
+}
+
+.form-row-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    opacity: 0.8;
+    line-height: 1.4;
+}
+
+/* Checkbox rows (e.g. "enable radio", "enable meetings") */
+.form-row-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-direction: row;
+}
+
+.form-row-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+}
+
+.form-row-checkbox label {
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+/* Native color picker, styled to fit the glass aesthetic */
+.form-row input[type="color"] {
+    padding: 4px;
+    height: 40px;
+    width: 100%;
+    cursor: pointer;
+}
+
+/* Background image upload + preview */
+.form-row-file {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.form-row-file input[type="file"] {
+    flex: 1;
+    font-size: 13px;
+}
+
+#settings-background-preview {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid var(--card-border);
+    display: none;
+}
+
+#settings-background-preview.visible {
+    display: block;
 }
 
 .segmented {
@@ -773,7 +891,7 @@ body::after {
     margin-top: 4px;
 }
 
-.form-actions button {
+.btn {
     border: none;
     border-radius: 12px;
     padding: 10px 18px;
@@ -784,24 +902,30 @@ body::after {
     transition: all 0.25s ease;
 }
 
-#meeting-form-cancel {
+.btn-small {
+    padding: 8px 12px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.btn-secondary {
     background: rgba(255, 255, 255, 0.06);
     color: var(--text-secondary);
     border: 1px solid var(--card-border);
 }
 
-#meeting-form-cancel:hover {
+.btn-secondary:hover {
     color: var(--text-primary);
     border-color: var(--card-border-hover);
 }
 
-#meeting-form-submit {
+.btn-primary {
     background: var(--accent-color);
     color: #ffffff;
     box-shadow: 0 4px 12px var(--accent-glow);
 }
 
-#meeting-form-submit:hover {
+.btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(99, 102, 241, 0.45);
 }

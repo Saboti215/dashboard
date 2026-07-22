@@ -1,22 +1,147 @@
+/**
+ * Dashboard behavior.
+ *
+ * Everything the user can configure (search engine, calendar embed, accent color, background
+ * image, radio station, meetings on/off, language, ...) lives in chrome.storage and is edited
+ * through the Settings modal (#settings-toggle / #settings-modal) — there is no config file to
+ * edit anymore. See README.md for the full list of settings and what each one does.
+ */
+
+// Populated once getSettings() resolves; kept up to date after every save so functions that run
+// on an interval (the clock, the meeting checker) always see the latest values.
+let AppSettings = {};
+
+// Background image upload state, held only while the Settings modal is open:
+//   undefined -> untouched (don't touch storage on save)
+//   null      -> user clicked "Remove" (delete the stored image on save)
+//   data URL  -> user picked a new file (store it on save)
+let pendingBackgroundImage;
+
+// One-time event-binding guards. The apply/load functions below get called again every time
+// settings change (so a toggle can take effect without a reload) but their click/submit handlers
+// must only be attached once, or they'd fire multiple times per click after a second call.
+let meetingsModalWired = false;
+let settingsModalWired = false;
+let radioWired = false;
+let meetingsInterval = null;
 
 $(document).ready(() => {
-    // Set the copyright year
     $(document.body).attr("data-copy-right", `© ${new Date().getFullYear()} Tobias Schlößer`);
 
-    loadBackground();
-    loadMeetings();
-    loadCalendar();
+    initModals();
+
+    // Settings-independent widgets can start immediately.
     loadClock();
-    loadBookmarks();
-    loadCsAutoLogin();
-    loadRadio();
-    loadSearch();
+
+    // Everything else depends on the user's stored settings, which load asynchronously.
+    getSettings(settings => {
+        AppSettings = settings;
+
+        applyLanguage(settings.language);
+        applyAccentColor(settings.accentColor);
+        applyBackground();
+        loadCalendar(settings);
+        loadSearch(settings);
+        loadRadio(settings);
+        loadMeetings(settings);
+        applyGreeting(settings.userName);
+        loadSettingsModal(settings);
+    });
 });
 
-function loadSearch() {
-    // Ensure the search bar has focus even if the browser tries to focus the omnibox instead
-    $("#search-input").trigger("focus");
+// ---------------------------------------------------------------------------------------------
+// Settings storage (chrome.storage.sync, so settings roam across the user's signed-in devices)
+// ---------------------------------------------------------------------------------------------
+
+// Shared by both the settings object and the meetings list: both are small enough to live in
+// chrome.storage.sync (so they roam across the user's signed-in devices), falling back to
+// storage.local if sync is unavailable for some reason.
+function getSyncStorage() {
+    return chrome.storage.sync || chrome.storage.local;
 }
+
+function getDefaultSettings() {
+    return {
+        language: detectDefaultLanguage(), // from i18n.js; falls back to the browser's language
+        userName: "",
+        accentColor: "#6366f1",
+        searchEngine: "brave",
+        calendarIframe: "",
+        tuneInId: "",
+        radioEnabled: true,
+        meetingsEnabled: true
+    };
+}
+
+function getSettings(cb) {
+    if (typeof chrome === "undefined" || !chrome.storage) {
+        cb(getDefaultSettings());
+        return;
+    }
+
+    // Passing the defaults object as the "keys" argument makes chrome.storage fill in any key
+    // that isn't in storage yet, so callers always get a complete settings object.
+    getSyncStorage().get(getDefaultSettings(), cb);
+}
+
+function saveSettings(settings, cb) {
+    if (typeof chrome === "undefined" || !chrome.storage) {
+        if (cb) cb();
+        return;
+    }
+
+    getSyncStorage().set(settings, () => {
+        if (cb) cb();
+    });
+}
+
+// The background image is a potentially large data URL, so it's kept in its own storage.local key
+// instead of the small, synced "settings" object (chrome.storage.sync has an ~8KB per-item quota).
+function getBackgroundImage(cb) {
+    if (typeof chrome === "undefined" || !chrome.storage) {
+        cb(null);
+        return;
+    }
+
+    chrome.storage.local.get({ backgroundImage: null }, data => cb(data.backgroundImage));
+}
+
+function saveBackgroundImage(dataUrl, cb) {
+    if (typeof chrome === "undefined" || !chrome.storage) {
+        if (cb) cb();
+        return;
+    }
+
+    if (dataUrl) {
+        chrome.storage.local.set({ backgroundImage: dataUrl }, cb);
+    } else {
+        chrome.storage.local.remove("backgroundImage", cb);
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Language
+// ---------------------------------------------------------------------------------------------
+
+// Called on load and again after every settings save, in case the language changed. Static texts
+// are re-swept via data-i18n attributes; anything rendered dynamically (dates, bookmark category
+// names, the meeting list, the active-meeting card, the search placeholder) is re-rendered
+// explicitly since it isn't tied to a DOM attribute i18n can find on its own.
+function applyLanguage(lang) {
+    setLanguage(lang);
+    applyStaticTranslations();
+
+    $("#clock-date").text(getClockDate());
+    applyGreeting(AppSettings.userName);
+    updateSearchPlaceholder(AppSettings.searchEngine);
+    loadBookmarks();
+    renderMeetingsList();
+    updateMeetings();
+}
+
+// ---------------------------------------------------------------------------------------------
+// Bookmarks (rendered from the browser's bookmarks bar; see README for the folder->category rule)
+// ---------------------------------------------------------------------------------------------
 
 function loadBookmarks() {
     if (typeof chrome === "undefined" || !chrome.bookmarks) return;
@@ -41,14 +166,15 @@ function loadBookmarks() {
 
         // Loose bookmarks directly on the bookmarks bar (not in a folder)
         if (loose.length) {
-            html += renderBookmarkCategory("Allgemein", loose);
+            html += renderBookmarkCategory(t("bookmarks.general"), loose);
         }
 
-        // Every folder becomes its own category, just like the previous static sections
+        // Every folder becomes its own category, so the bar's structure is the only place a
+        // user needs to organize their quick links.
         folders.forEach(folder => {
             const bookmarks = folder.children.filter(n => n.url);
             if (bookmarks.length) {
-                html += renderBookmarkCategory(folder.title || "Sonstiges", bookmarks);
+                html += renderBookmarkCategory(folder.title || t("bookmarks.misc"), bookmarks);
             }
         });
 
@@ -81,40 +207,155 @@ function getFaviconUrl(pageUrl) {
     return url.toString();
 }
 
-function escapeHtml(str) {
-    return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+// ---------------------------------------------------------------------------------------------
+// Search
+// ---------------------------------------------------------------------------------------------
+
+const SEARCH_ENGINES = {
+    brave: { name: "Brave", url: "https://search.brave.com/search", param: "q" },
+    google: { name: "Google", url: "https://www.google.com/search", param: "q" },
+    duckduckgo: { name: "DuckDuckGo", url: "https://duckduckgo.com/", param: "q" },
+    bing: { name: "Bing", url: "https://www.bing.com/search", param: "q" },
+    startpage: { name: "Startpage", url: "https://www.startpage.com/sp/search", param: "query" },
+    ecosia: { name: "Ecosia", url: "https://www.ecosia.org/search", param: "q" }
+};
+
+function loadSearch(settings) {
+    const engineKey = SEARCH_ENGINES[settings.searchEngine] ? settings.searchEngine : "brave";
+    const engine = SEARCH_ENGINES[engineKey];
+
+    $("#search-form").attr("action", engine.url);
+    $("#search-input").attr("name", engine.param);
+    updateSearchPlaceholder(engineKey);
+
+    // Ensure the search bar has focus even if the browser tries to focus the omnibox instead
+    $("#search-input").trigger("focus");
 }
 
-function loadMeetings() {
-    if (typeof chrome === "undefined" || !chrome.storage) {
-        $("#meetings-toggle, #meetings-modal").remove();
+function updateSearchPlaceholder(engineKey) {
+    const engine = SEARCH_ENGINES[engineKey] || SEARCH_ENGINES.brave;
+    $("#search-input").attr("placeholder", t("search.placeholder", { engine: engine.name }));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Radio (TuneIn embed)
+// ---------------------------------------------------------------------------------------------
+
+function loadRadio(settings) {
+    const enabled = settings.radioEnabled !== false && !!settings.tuneInId;
+    $("#radio-panel, #radio-toggle").toggleClass("feature-hidden", !enabled);
+
+    if (!enabled) {
+        $("#radio-panel, #radio-toggle").removeClass("active");
         return;
     }
 
-    updateMeetings();
+    $("#radio-frame").attr("src", `https://tunein.com/embed/player/s${settings.tuneInId}/`);
+
+    if (radioWired) return;
+    radioWired = true;
+
+    // Toggle player panel visibility
+    $("#radio-toggle").on("click", function() {
+        $("#radio-panel").toggleClass("active");
+        $(this).toggleClass("active");
+    });
+
+    // Close player when clicking outside it
+    $(document).on("click", function(event) {
+        if (!$(event.target).closest("#radio-panel, #radio-toggle").length) {
+            $("#radio-panel").removeClass("active");
+            $("#radio-toggle").removeClass("active");
+        }
+    });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Calendar (arbitrary iframe embed the user pastes in Settings, e.g. from Google Calendar)
+// ---------------------------------------------------------------------------------------------
+
+function loadCalendar(settings) {
+    const iframe = (settings.calendarIframe || "").trim();
+    $("#calendar-wrapper").html(iframe);
+    $("#calendar-container").toggleClass("feature-hidden", !iframe);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Clock & greeting
+// ---------------------------------------------------------------------------------------------
+
+function loadClock() {
+    $("#clock-time").text(getClockTime());
+    $("#clock-date").text(getClockDate());
+
     window.setInterval(() => {
-        updateMeetings();
-    }, 60 * 1000); // Reload every minute
-
-    loadMeetingsModal();
+        $("#clock-time").text(getClockTime());
+        $("#clock-date").text(getClockDate());
+        applyGreeting(AppSettings.userName);
+    }, 1000);
 }
 
-// Meetings live in chrome.storage (synced across devices) instead of src/meetings.json
-function getMeetingsStorageArea() {
-    return chrome.storage.sync || chrome.storage.local;
+function getClockTime() {
+    const today = new Date();
+    return today.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
+
+function getClockDate() {
+    const weekdays = t("weekdays");
+    const today = new Date();
+    return `${weekdays[today.getDay()]}, ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
+}
+
+// Shows a time-of-day greeting ("Good morning, <name>") next to the clock once a name is set in
+// Settings -> General; hidden entirely otherwise.
+function applyGreeting(name) {
+    const el = $("#greeting");
+
+    if (!name) {
+        el.hide().empty();
+        return;
+    }
+
+    const hour = new Date().getHours();
+    const key = hour < 11 ? "greeting.morning" : hour < 18 ? "greeting.afternoon" : "greeting.evening";
+    el.text(t(key, { name })).show();
+}
+
+function applyBackground() {
+    getBackgroundImage(dataUrl => {
+        $(document.body).css("background-image", dataUrl ? `url(${dataUrl})` : "none");
+    });
+}
+
+function applyAccentColor(hex) {
+    if (!hex) return;
+    document.documentElement.style.setProperty("--accent-color", hex);
+    document.documentElement.style.setProperty("--accent-glow", hexToRgba(hex, 0.15));
+}
+
+function hexToRgba(hex, alpha) {
+    const clean = (hex || "").replace("#", "");
+    const full = clean.length === 3 ? clean.split("").map(c => c + c).join("") : clean;
+    const value = parseInt(full, 16);
+
+    if (full.length !== 6 || Number.isNaN(value)) return `rgba(99, 102, 241, ${alpha})`; // default accent
+
+    const r = (value >> 16) & 255;
+    const g = (value >> 8) & 255;
+    const b = value & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Meetings (stored in chrome.storage; managed through the Meetings modal)
+// ---------------------------------------------------------------------------------------------
 
 function getMeetings(cb) {
-    getMeetingsStorageArea().get({ meetings: [] }, data => cb(data.meetings || []));
+    getSyncStorage().get({ meetings: [] }, data => cb(data.meetings || []));
 }
 
 function saveMeetings(meetings, cb) {
-    getMeetingsStorageArea().set({ meetings }, () => {
+    getSyncStorage().set({ meetings }, () => {
         if (cb) cb();
     });
 }
@@ -132,51 +373,42 @@ function formatDateForDisplay(dateStr) {
     return `${d}.${m}.${y}`;
 }
 
-function loadRadio() {
-    if (typeof TUNEIN_SENDER_ID === "undefined") {
-        $("#radio-panel, #radio-toggle").remove();
+function loadMeetings(settings) {
+    const enabled = settings.meetingsEnabled !== false;
+    $("#meetings-toggle, #meeting-portal").toggleClass("feature-hidden", !enabled);
+
+    if (meetingsInterval) {
+        clearInterval(meetingsInterval);
+        meetingsInterval = null;
+    }
+
+    if (!enabled || typeof chrome === "undefined" || !chrome.storage) {
+        $("#meetings-modal").removeClass("active");
+        $("#meeting-portal").removeClass("visible").empty();
         return;
     }
 
-    $("#radio-frame").attr("src", `https://tunein.com/embed/player/s${TUNEIN_SENDER_ID}/`);
+    updateMeetings();
+    meetingsInterval = window.setInterval(updateMeetings, 60 * 1000); // Reload every minute
 
-    // Toggle player panel visibility
-    $("#radio-toggle").on("click", function() {
-        $("#radio-panel").toggleClass("active");
-        $(this).toggleClass("active");
-    });
-
-    // Close player when clicking outside it
-    $(document).on("click", function(event) {
-        if (!$(event.target).closest("#radio-panel, #radio-toggle").length) {
-            $("#radio-panel").removeClass("active");
-            $("#radio-toggle").removeClass("active");
-        }
-    });
-}
-
-function loadCalendar() {
-    if (typeof CALENDER_FRAME === "undefined") {
-        $("#calendar-container").remove();
-        return;
-    }
-
-    $("#calendar-wrapper").html(CALENDER_FRAME);
+    loadMeetingsModal();
 }
 
 function updateMeetings() {
+    if (typeof chrome === "undefined" || !chrome.storage) return;
+
     getMeetings(meetings => {
         // Check if there is a meeting in the next 15 minutes or right now
         const today = new Date();
         const now = today.getHours() * 60 + today.getMinutes();
         const todayStr = formatDateForStorage(today);
 
-        let meeting = meetings.find(m => {
+        const meeting = meetings.find(m => {
             const startHour = parseInt(m.start_time.split(":")[0]);
             const endHour = parseInt(m.end_time.split(":")[0]);
             const startMin = parseInt(m.start_time.split(":")[1]);
             const endMin = parseInt(m.end_time.split(":")[1]);
-            const start = startHour * 60 + startMin - 15; // 15 Minutes before the start
+            const start = startHour * 60 + startMin - 15; // 15 minutes before the start
             const end = endHour * 60 + endMin;
 
             const isToday = m.recurrence === "once"
@@ -187,39 +419,40 @@ function updateMeetings() {
             return (isToday && start <= now && now < end);
         });
 
-        if (meeting) {
-            // Check if meeting alert is already rendered
-            if ($("#active-meeting").length === 0) {
-                const typeLabel = meeting.type === "teams" ? "MS Teams" : "Zoom";
-                const meetingHtml = `
-                    <div class="meeting-card" id="active-meeting">
-                        <div class="meeting-header">
-                            <span class="pulse-dot"></span>
-                            <span class="meeting-badge">AKTIVES MEETING &middot; ${escapeHtml(typeLabel)}</span>
-                        </div>
-                        <div class="meeting-title">${escapeHtml(meeting.name)}</div>
-                        <div class="meeting-time">Heute ${escapeHtml(meeting.start_time)} - ${escapeHtml(meeting.end_time)} Uhr</div>
-                        <button class="meeting-btn" id="join-meeting-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="btn-icon">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            Beitreten
-                        </button>
-                    </div>
-                `;
-                $("#meeting-portal").html(meetingHtml).addClass("visible");
-
-                $("#join-meeting-btn").on("click", () => {
-                    // Copy the password (if any) and join via the stored link
-                    if (meeting.password) {
-                        copyToClipboard(meeting.password);
-                    }
-
-                    window.location.href = meeting.link;
-                });
-            }
-        } else {
+        if (!meeting) {
             $("#meeting-portal").removeClass("visible").empty();
+            return;
+        }
+
+        // Check if the meeting alert is already rendered
+        if ($("#active-meeting").length === 0) {
+            const typeLabel = meeting.type === "teams" ? "MS Teams" : "Zoom";
+            const meetingHtml = `
+                <div class="meeting-card" id="active-meeting">
+                    <div class="meeting-header">
+                        <span class="pulse-dot"></span>
+                        <span class="meeting-badge">${escapeHtml(t("meetings.active"))} &middot; ${escapeHtml(typeLabel)}</span>
+                    </div>
+                    <div class="meeting-title">${escapeHtml(meeting.name)}</div>
+                    <div class="meeting-time">${escapeHtml(t("meetings.todayTime", { start: meeting.start_time, end: meeting.end_time }))}</div>
+                    <button class="meeting-btn" id="join-meeting-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="btn-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        ${escapeHtml(t("meetings.join"))}
+                    </button>
+                </div>
+            `;
+            $("#meeting-portal").html(meetingHtml).addClass("visible");
+
+            $("#join-meeting-btn").on("click", () => {
+                // Copy the password (if any) and join via the stored link
+                if (meeting.password) {
+                    copyToClipboard(meeting.password);
+                }
+
+                window.location.href = meeting.link;
+            });
         }
     });
 }
@@ -227,17 +460,12 @@ function updateMeetings() {
 function loadMeetingsModal() {
     renderMeetingsList();
 
+    if (meetingsModalWired) return;
+    meetingsModalWired = true;
+
     $("#meetings-toggle").on("click", () => {
         renderMeetingsList();
         $("#meetings-modal").addClass("active");
-    });
-
-    $("#meetings-modal-close, #meetings-modal-backdrop").on("click", () => {
-        $("#meetings-modal").removeClass("active");
-    });
-
-    $(document).on("keydown", (e) => {
-        if (e.key === "Escape") $("#meetings-modal").removeClass("active");
     });
 
     // Toggle between "weekly" (weekday select) and "once" (date picker)
@@ -311,13 +539,15 @@ function loadMeetingsModal() {
 }
 
 function renderMeetingsList() {
+    if (typeof chrome === "undefined" || !chrome.storage) return;
+
     getMeetings(meetings => {
         if (!meetings.length) {
-            $("#meetings-list").html(`<div class="meetings-empty">Noch keine Meetings angelegt.</div>`);
+            $("#meetings-list").html(`<div class="meetings-empty">${escapeHtml(t("meetings.empty"))}</div>`);
             return;
         }
 
-        const weekdays = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+        const weekdays = t("weekdays");
 
         const rows = meetings
             .slice()
@@ -335,12 +565,12 @@ function renderMeetingsList() {
                             <div class="meeting-row-meta">${escapeHtml(typeLabel)} &middot; ${escapeHtml(when)} &middot; ${escapeHtml(m.start_time)}-${escapeHtml(m.end_time)}</div>
                         </div>
                         <div class="meeting-row-actions">
-                            <button type="button" data-edit="${escapeHtml(m.id)}" title="Bearbeiten">
+                            <button type="button" data-edit="${escapeHtml(m.id)}" title="${escapeHtml(t("meetings.edit"))}">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                             </button>
-                            <button type="button" data-delete="${escapeHtml(m.id)}" title="Löschen">
+                            <button type="button" data-delete="${escapeHtml(m.id)}" title="${escapeHtml(t("meetings.delete"))}">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
@@ -384,61 +614,137 @@ function resetMeetingForm() {
     $("#date-row").hide();
 }
 
-function loadClock() {
-    // Initial load
-    $("#clock-time").html(getClockTime());
-    $("#clock-date").html(getClockDate());
+// ---------------------------------------------------------------------------------------------
+// Settings modal
+// ---------------------------------------------------------------------------------------------
 
-    window.setInterval(() => {
-        $("#clock-time").html(getClockTime());
-        $("#clock-date").html(getClockDate());
-    }, 1000);
-}
+function loadSettingsModal(settings) {
+    fillSettingsForm(settings);
 
-function getClockTime() {
-    const today = new Date();
-    return today.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
+    if (settingsModalWired) return;
+    settingsModalWired = true;
 
-function getClockDate() {
-    const days = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
-    const today = new Date();
-    return `${days[today.getDay()]}, ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
-}
-
-function loadBackground() {
-    // Sets standard local image
-    $(document.body).css("background-image", `url(assets/bg.jpg)`);
-}
-
-function loadCsAutoLogin() {
-    if (typeof CS_USERNAME === "undefined" || typeof CS_PASSWORD === "undefined") return;
-
-    // Bookmarks are rendered asynchronously, so bind via delegation on a static ancestor
-    // instead of the (not yet existing) anchor elements themselves.
-    $("#apps-wrapper").on("click", "a[data-name=CodingSpace]", (e) => {
-        e.preventDefault();
-        const form = `<form id="cs-login-form" action="https://internal.codeclubmg.de/?page=login" method="post" style="display: none;">
-            <input name="login[userName]" value="${CS_USERNAME}">
-            <input name="login[password]" value="${CS_PASSWORD}">
-            <input name="login[returnPage]" value="https://codeclubmg.de">
-        </form>`;
-
-        $(document.body).append(form);
-        $("form#cs-login-form").submit();
+    $("#settings-toggle").on("click", () => {
+        // Re-fetch on every open so the form always reflects the latest saved state, even if it
+        // was changed in a different tab/window in the meantime.
+        getSettings(current => {
+            fillSettingsForm(current);
+            $("#settings-modal").addClass("active");
+        });
     });
 
-    $("#apps-wrapper").on("click", "a[data-name=CodingSpaceTest]", (e) => {
-        e.preventDefault();
-        const form = `<form id="cs-login-form" action="https://test.internal.codeclubmg.de/?page=login" method="post" style="display: none;">
-            <input name="login[userName]" value="${CS_USERNAME}">
-            <input name="login[password]" value="${CS_PASSWORD}">
-            <input name="login[returnPage]" value="https://codeclubmg.de/gleis934">
-        </form>`;
-
-        $(document.body).append(form);
-        $("form#cs-login-form").submit();
+    $("#settings-form-cancel").on("click", () => {
+        $("#settings-modal").removeClass("active");
     });
+
+    $("#settings-background-file").on("change", function() {
+        const file = this.files && this.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            pendingBackgroundImage = reader.result; // data URL, only stored once the form is saved
+            showBackgroundPreview(pendingBackgroundImage);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    $("#settings-background-remove").on("click", () => {
+        pendingBackgroundImage = null; // queued for removal on save
+        $("#settings-background-file").val("");
+        showBackgroundPreview(null);
+    });
+
+    $("#settings-form").on("submit", (e) => {
+        e.preventDefault();
+
+        const newSettings = {
+            language: $("#settings-language").val(),
+            userName: $("#settings-user-name").val().trim(),
+            accentColor: $("#settings-accent-color").val(),
+            searchEngine: $("#settings-search-engine").val(),
+            calendarIframe: $("#settings-calendar-iframe").val().trim(),
+            tuneInId: $("#settings-tunein-id").val().trim(),
+            radioEnabled: $("#settings-radio-enabled").is(":checked"),
+            meetingsEnabled: $("#settings-meetings-enabled").is(":checked")
+        };
+
+        // Applies every affected widget immediately, without requiring a page reload.
+        const applyEverything = () => {
+            AppSettings = newSettings;
+            applyLanguage(newSettings.language);
+            applyAccentColor(newSettings.accentColor);
+            applyBackground();
+            loadCalendar(newSettings);
+            loadSearch(newSettings);
+            loadRadio(newSettings);
+            loadMeetings(newSettings);
+            applyGreeting(newSettings.userName);
+            $("#settings-modal").removeClass("active");
+        };
+
+        saveSettings(newSettings, () => {
+            if (pendingBackgroundImage !== undefined) {
+                saveBackgroundImage(pendingBackgroundImage, () => {
+                    pendingBackgroundImage = undefined;
+                    applyEverything();
+                });
+            } else {
+                applyEverything();
+            }
+        });
+    });
+}
+
+function fillSettingsForm(settings) {
+    $("#settings-language").val(settings.language);
+    $("#settings-user-name").val(settings.userName || "");
+    $("#settings-search-engine").val(SEARCH_ENGINES[settings.searchEngine] ? settings.searchEngine : "brave");
+    $("#settings-accent-color").val(settings.accentColor || "#6366f1");
+    $("#settings-calendar-iframe").val(settings.calendarIframe || "");
+    $("#settings-radio-enabled").prop("checked", settings.radioEnabled !== false);
+    $("#settings-tunein-id").val(settings.tuneInId || "");
+    $("#settings-meetings-enabled").prop("checked", settings.meetingsEnabled !== false);
+
+    pendingBackgroundImage = undefined;
+    $("#settings-background-file").val("");
+    getBackgroundImage(dataUrl => showBackgroundPreview(dataUrl));
+}
+
+function showBackgroundPreview(dataUrl) {
+    const preview = $("#settings-background-preview");
+    if (dataUrl) {
+        preview.attr("src", dataUrl).addClass("visible");
+    } else {
+        preview.removeAttr("src").removeClass("visible");
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Modals (shared open/close behavior for both #meetings-modal and #settings-modal)
+// ---------------------------------------------------------------------------------------------
+
+function initModals() {
+    $(document).on("click", ".modal-close, .modal-backdrop", function() {
+        $(this).closest(".modal").removeClass("active");
+    });
+
+    $(document).on("keydown", (e) => {
+        if (e.key === "Escape") $(".modal.active").removeClass("active");
+    });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------------------------
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }
 
 function copyToClipboard(str) {

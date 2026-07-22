@@ -6,7 +6,7 @@
         <link rel="shortcut icon" href="assets/dashboard.svg">
         <script src="./src/jquery-3.5.1.min.js"></script>
         <script src="./src/jquery-ui/jquery-ui.min.js"></script>
-        <script src="./src/passwords.js"></script>
+        <script src="./src/i18n.js"></script>
         <script src="./src/dashboard.js"></script>
         <link rel="stylesheet" href="src/dashboard.css">
         <title>Dashboard</title>
@@ -16,42 +16,45 @@
         <div id="bg-overlay"></div>
 
         <div id="dashboard">
-            <!-- Left Side: Calendar -->
+            <!-- Left Side: Calendar. Hidden by loadCalendar() until a calendar embed is configured
+                 in Settings. -->
             <div class="container" id="calendar-container">
                 <a href="https://calendar.google.com/calendar/b/0/r" target="_blank" class="container-header-link">
                     <div class="head">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="head-icon">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        Kalender
+                        <span data-i18n="widgets.calendar">Kalender</span>
                     </div>
                 </a>
                 <div class="content" id="calendar-wrapper">
                 </div>
             </div>
 
-            <!-- Right Side Stack: Clock & Apps -->
+            <!-- Right Side Stack: Clock, Search, Bookmarks -->
             <div class="right-column">
                 <!-- Clock Widget -->
                 <div class="container clock-container">
                     <div class="content" id="clock-wrapper">
                         <div id="clock">
                             <div id="clock-time">--:--:--</div>
-                            <div id="clock-date">Laden...</div>
+                            <div id="clock-date">...</div>
+                            <!-- Shown only once a name is set in Settings -->
+                            <div id="greeting"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Search Widget -->
+                <!-- Search Widget: engine is configurable in Settings -->
                 <div class="container" id="search-container">
                     <div class="content" id="search-wrapper">
                         <form id="search-form" action="https://search.brave.com/search" method="get">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="search-icon">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
                             </svg>
-                            <input type="search" name="q" id="search-input" placeholder="Mit Brave suchen..." autofocus autocomplete="off">
+                            <input type="search" name="q" id="search-input" autofocus autocomplete="off">
                         </form>
-                        <a id="gemini-btn" href="https://gemini.google.com/app" title="Neuer Gemini-Chat">
+                        <a id="gemini-btn" href="https://gemini.google.com/app" data-i18n-title="gemini.title" title="Neuer Gemini-Chat">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l1.912 5.813L20 10.5l-6.088 1.687L12 18l-1.912-5.813L4 10.5l6.088-1.687L12 3z" />
                             </svg>
@@ -59,13 +62,13 @@
                     </div>
                 </div>
 
-                <!-- Apps Widget -->
+                <!-- Bookmarks Widget, populated from the browser's bookmarks bar -->
                 <div class="container" id="apps-container">
                     <div class="head">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="head-icon">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                         </svg>
-                        Lesezeichen
+                        <span data-i18n="widgets.bookmarks">Lesezeichen</span>
                     </div>
                     <div class="content" id="apps-wrapper">
                     </div>
@@ -73,41 +76,49 @@
             </div>
         </div>
 
-        <!-- Floating Music Player Widget -->
+        <!-- Floating Music Player Widget. Removed entirely by loadRadio() when disabled in Settings. -->
         <div id="radio-panel">
             <div class="radio-header">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="radio-icon">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
-                <span>TuneIn Radio</span>
+                <span data-i18n="radio.panelTitle">TuneIn Radio</span>
             </div>
             <div class="radio-content">
                 <iframe id="radio-frame" scrolling="no" frameborder="no"></iframe>
             </div>
         </div>
 
-        <button id="radio-toggle" title="Radio Player">
+        <button id="radio-toggle" data-i18n-title="radio.toggleTitle" title="Radio Player">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
         </button>
 
-        <!-- Meeting Container Placeholder (will be animated in by JS) -->
+        <!-- Meeting Container Placeholder (will be animated in by JS). Removed entirely by
+             loadMeetings() when disabled in Settings. -->
         <div id="meeting-portal"></div>
 
-        <button id="meetings-toggle" title="Meetings verwalten">
+        <button id="meetings-toggle" data-i18n-title="meetings.toggleTitle" title="Meetings verwalten">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
         </button>
 
+        <button id="settings-toggle" data-i18n-title="settings.toggleTitle" title="Einstellungen">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        </button>
+
         <!-- Meetings Management Modal -->
-        <div id="meetings-modal">
-            <div id="meetings-modal-backdrop"></div>
-            <div id="meetings-modal-card">
+        <div class="modal" id="meetings-modal">
+            <div class="modal-backdrop"></div>
+            <div class="modal-card">
                 <div class="modal-header">
-                    <span>Meetings verwalten</span>
-                    <button type="button" id="meetings-modal-close" title="Schließen">&times;</button>
+                    <span data-i18n="meetings.modalTitle">Meetings verwalten</span>
+                    <button type="button" class="modal-close" data-i18n-title="close" title="Schließen">&times;</button>
                 </div>
 
                 <div id="meetings-list"></div>
@@ -117,69 +128,148 @@
                     <input type="hidden" id="meeting-recurrence" value="weekly">
 
                     <div class="form-row">
-                        <label for="meeting-name">Name</label>
+                        <label for="meeting-name" data-i18n="meetings.form.name">Name</label>
                         <input type="text" id="meeting-name" required>
                     </div>
 
                     <div class="form-row form-row-split">
                         <div>
-                            <label for="meeting-type">Typ</label>
+                            <label for="meeting-type" data-i18n="meetings.form.type">Typ</label>
                             <select id="meeting-type">
                                 <option value="zoom">Zoom</option>
                                 <option value="teams">MS Teams</option>
                             </select>
                         </div>
                         <div>
-                            <label for="meeting-password">Passwort (optional)</label>
+                            <label for="meeting-password" data-i18n="meetings.form.password">Passwort (optional)</label>
                             <input type="text" id="meeting-password" autocomplete="off">
                         </div>
                     </div>
 
                     <div class="form-row">
-                        <label for="meeting-link">Link</label>
+                        <label for="meeting-link" data-i18n="meetings.form.link">Link</label>
                         <input type="url" id="meeting-link" placeholder="https://..." required>
                     </div>
 
                     <div class="form-row form-row-split">
                         <div>
-                            <label for="meeting-start">Start</label>
+                            <label for="meeting-start" data-i18n="meetings.form.start">Start</label>
                             <input type="time" id="meeting-start" required>
                         </div>
                         <div>
-                            <label for="meeting-end">Ende</label>
+                            <label for="meeting-end" data-i18n="meetings.form.end">Ende</label>
                             <input type="time" id="meeting-end" required>
                         </div>
                     </div>
 
                     <div class="form-row">
-                        <label>Wiederholung</label>
+                        <label data-i18n="meetings.form.recurrence">Wiederholung</label>
                         <div class="segmented" id="recurrence-toggle">
-                            <button type="button" data-value="weekly" class="active">Wöchentlich</button>
-                            <button type="button" data-value="once">Einmalig</button>
+                            <button type="button" data-value="weekly" class="active" data-i18n="meetings.form.weekly">Wöchentlich</button>
+                            <button type="button" data-value="once" data-i18n="meetings.form.once">Einmalig</button>
                         </div>
                     </div>
 
                     <div class="form-row" id="weekday-row">
-                        <label for="meeting-weekday">Wochentag</label>
+                        <label for="meeting-weekday" data-i18n="meetings.form.weekday">Wochentag</label>
                         <select id="meeting-weekday">
-                            <option value="1">Montag</option>
-                            <option value="2">Dienstag</option>
-                            <option value="3">Mittwoch</option>
-                            <option value="4">Donnerstag</option>
-                            <option value="5">Freitag</option>
-                            <option value="6">Samstag</option>
-                            <option value="0">Sonntag</option>
+                            <option value="1" data-i18n="weekdays.1">Montag</option>
+                            <option value="2" data-i18n="weekdays.2">Dienstag</option>
+                            <option value="3" data-i18n="weekdays.3">Mittwoch</option>
+                            <option value="4" data-i18n="weekdays.4">Donnerstag</option>
+                            <option value="5" data-i18n="weekdays.5">Freitag</option>
+                            <option value="6" data-i18n="weekdays.6">Samstag</option>
+                            <option value="0" data-i18n="weekdays.0">Sonntag</option>
                         </select>
                     </div>
 
                     <div class="form-row" id="date-row" style="display: none;">
-                        <label for="meeting-date">Datum</label>
+                        <label for="meeting-date" data-i18n="meetings.form.date">Datum</label>
                         <input type="date" id="meeting-date">
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" id="meeting-form-cancel">Neu / Zurücksetzen</button>
-                        <button type="submit" id="meeting-form-submit">Speichern</button>
+                        <button type="button" id="meeting-form-cancel" class="btn btn-secondary" data-i18n="meetings.form.cancel">Neu / Zurücksetzen</button>
+                        <button type="submit" id="meeting-form-submit" class="btn btn-primary" data-i18n="meetings.form.save">Speichern</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Settings Modal: the single place to configure this dashboard, no file editing required -->
+        <div class="modal" id="settings-modal">
+            <div class="modal-backdrop"></div>
+            <div class="modal-card">
+                <div class="modal-header">
+                    <span data-i18n="settings.modalTitle">Einstellungen</span>
+                    <button type="button" class="modal-close" data-i18n-title="close" title="Schließen">&times;</button>
+                </div>
+
+                <form id="settings-form">
+                    <div class="form-row">
+                        <label for="settings-language" data-i18n="settings.language">Sprache</label>
+                        <select id="settings-language">
+                            <option value="de">Deutsch</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="settings-user-name" data-i18n="settings.userName">Dein Name</label>
+                        <input type="text" id="settings-user-name" autocomplete="off">
+                    </div>
+
+                    <div class="form-row">
+                        <label for="settings-search-engine" data-i18n="settings.searchEngine">Suchmaschine</label>
+                        <select id="settings-search-engine">
+                            <option value="brave">Brave</option>
+                            <option value="google">Google</option>
+                            <option value="duckduckgo">DuckDuckGo</option>
+                            <option value="bing">Bing</option>
+                            <option value="startpage">Startpage</option>
+                            <option value="ecosia">Ecosia</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="settings-accent-color" data-i18n="settings.accentColor">Akzentfarbe</label>
+                        <input type="color" id="settings-accent-color">
+                    </div>
+
+                    <div class="form-row">
+                        <label for="settings-background-file" data-i18n="settings.background">Hintergrundbild</label>
+                        <div class="form-row-file">
+                            <img id="settings-background-preview" alt="">
+                            <input type="file" id="settings-background-file" accept="image/*">
+                            <button type="button" id="settings-background-remove" class="btn btn-secondary btn-small" data-i18n="settings.backgroundRemove">Entfernen</button>
+                        </div>
+                        <div class="form-row-hint" data-i18n="settings.backgroundHint">Ohne Bild wird nur die Hintergrundfarbe verwendet.</div>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="settings-calendar-iframe" data-i18n="settings.calendarIframe">Kalender-Einbettung</label>
+                        <textarea id="settings-calendar-iframe" rows="3" placeholder="<iframe src=&quot;https://calendar.google.com/...&quot; ...></iframe>"></textarea>
+                        <div class="form-row-hint" data-i18n="settings.calendarHint">Google Kalender → Einstellungen → "Kalender integrieren" → den Code aus dem &lt;iframe&gt;-Feld hier einfügen.</div>
+                    </div>
+
+                    <div class="form-row form-row-checkbox">
+                        <input type="checkbox" id="settings-radio-enabled">
+                        <label for="settings-radio-enabled" data-i18n="settings.radioEnabled">Radio-Player anzeigen</label>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="settings-tunein-id" data-i18n="settings.tuneInId">TuneIn Sender-ID</label>
+                        <input type="text" id="settings-tunein-id" placeholder="s12345">
+                    </div>
+
+                    <div class="form-row form-row-checkbox">
+                        <input type="checkbox" id="settings-meetings-enabled">
+                        <label for="settings-meetings-enabled" data-i18n="settings.meetingsEnabled">Meeting Quick-Join anzeigen</label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="settings-form-cancel" class="btn btn-secondary" data-i18n="settings.cancel">Abbrechen</button>
+                        <button type="submit" id="settings-form-submit" class="btn btn-primary" data-i18n="settings.save">Speichern</button>
                     </div>
                 </form>
             </div>
