@@ -259,8 +259,8 @@ body::after {
     -webkit-appearance: none;
 }
 
-/* Gemini quick-start button */
-#gemini-btn {
+/* AI assistant quick-start button (which assistant it opens is set in Settings) */
+#ai-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -278,12 +278,12 @@ body::after {
                 box-shadow 0.3s;
 }
 
-#gemini-btn svg {
+#ai-btn svg {
     width: 22px;
     height: 22px;
 }
 
-#gemini-btn:hover {
+#ai-btn:hover {
     transform: translateY(-3px);
     background-color: rgba(255, 255, 255, 0.06);
     border-color: var(--card-border-hover);
@@ -605,15 +605,16 @@ body::after {
 
 .modal-card {
     position: relative;
-    width: min(480px, calc(100vw - 50px));
+    width: min(560px, calc(100vw - 50px));
     max-height: 85vh;
     overflow-y: auto;
+    overflow-x: hidden;
     background: var(--card-bg);
     backdrop-filter: blur(25px) saturate(190%);
     -webkit-backdrop-filter: blur(25px) saturate(190%);
     border: 1px solid var(--card-border);
     border-radius: 24px;
-    padding: 25px;
+    padding: 32px;
     box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
     transform: translateY(10px) scale(0.98);
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -629,8 +630,8 @@ body::after {
     justify-content: space-between;
     font-size: 20px;
     font-weight: 600;
-    margin-bottom: 18px;
-    padding-bottom: 14px;
+    margin-bottom: 26px;
+    padding-bottom: 18px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -732,25 +733,30 @@ body::after {
     border-color: rgba(248, 113, 113, 0.4);
 }
 
-/* Meeting form */
-#meeting-form {
+/* Shared form layout, used by both the Meeting form and the Settings form */
+.modal-form {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding-top: 16px;
+    gap: 22px;
+}
+
+/* The meeting form follows the meetings list, so it gets its own divider above it;
+   the settings form follows directly after the modal header and needs none. */
+#meeting-form {
+    padding-top: 20px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .form-row {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .form-row-split {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
+    gap: 16px;
 }
 
 .form-row label {
@@ -835,11 +841,13 @@ body::after {
 .form-row-file {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 12px;
 }
 
 .form-row-file input[type="file"] {
     flex: 1;
+    min-width: 0; /* let the (otherwise wide) native file input shrink instead of overflowing */
     font-size: 13px;
 }
 
@@ -887,8 +895,10 @@ body::after {
 .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
+    gap: 12px;
     margin-top: 4px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .btn {

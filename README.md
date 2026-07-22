@@ -30,7 +30,8 @@ There is no config file to edit and no build step — it's plain HTML/CSS/JS plu
   morning, ...").
 - **Appearance** — set an accent color and, optionally, upload a background image. Without an
   image, only the background color is used.
-- **Gemini shortcut** — a small button next to the search bar opens a new Gemini chat.
+- **AI assistant shortcut** — a small button next to the search bar opens a new chat with the
+  assistant of your choice (Gemini, ChatGPT, Claude, Copilot, or Perplexity), picked in Settings.
 - **Bilingual UI** — German and English, switchable at any time in Settings; takes effect
   immediately, no reload needed.
 - Radio and the meeting widget can each be turned off entirely if you don't need them.
@@ -54,6 +55,7 @@ Click the gear icon (top right) to open **Settings**:
 | Language | Switches the whole UI between German and English. |
 | Your name | Shows a time-of-day greeting next to the clock. Leave empty to hide it. |
 | Search engine | Which engine the search bar submits to. |
+| AI assistant | Which assistant the AI button (next to the search bar) opens. |
 | Accent color | The dashboard's highlight color (buttons, focus states, active toggles). |
 | Background image | Upload an image to use as the page background; "Remove" clears it back to a plain color. Stored locally in the browser, never uploaded anywhere. |
 | Calendar embed | Paste an `<iframe>` embed snippet here to show a calendar; leave empty to hide the calendar widget entirely. |

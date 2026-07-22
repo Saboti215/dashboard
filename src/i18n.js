@@ -26,8 +26,8 @@ const TRANSLATIONS = {
         search: {
             placeholder: "Mit {engine} suchen..."
         },
-        gemini: {
-            title: "Neuer Gemini-Chat"
+        ai: {
+            title: "Neuer KI-Chat"
         },
         radio: {
             panelTitle: "TuneIn Radio",
@@ -71,6 +71,7 @@ const TRANSLATIONS = {
             language: "Sprache",
             userName: "Dein Name",
             searchEngine: "Suchmaschine",
+            aiAssistant: "KI-Assistent",
             accentColor: "Akzentfarbe",
             background: "Hintergrundbild",
             backgroundHint: "Ohne Bild wird nur die Hintergrundfarbe verwendet.",
@@ -96,8 +97,8 @@ const TRANSLATIONS = {
         search: {
             placeholder: "Search with {engine}..."
         },
-        gemini: {
-            title: "New Gemini Chat"
+        ai: {
+            title: "New AI chat"
         },
         radio: {
             panelTitle: "TuneIn Radio",
@@ -141,6 +142,7 @@ const TRANSLATIONS = {
             language: "Language",
             userName: "Your name",
             searchEngine: "Search engine",
+            aiAssistant: "AI assistant",
             accentColor: "Accent color",
             background: "Background image",
             backgroundHint: "Without an image, only the background color is used.",

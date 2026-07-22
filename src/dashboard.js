@@ -39,6 +39,7 @@ $(document).ready(() => {
 
         applyLanguage(settings.language);
         applyAccentColor(settings.accentColor);
+        applyAiAssistant(settings.aiAssistant);
         applyBackground();
         loadCalendar(settings);
         loadSearch(settings);
@@ -66,6 +67,7 @@ function getDefaultSettings() {
         userName: "",
         accentColor: "#6366f1",
         searchEngine: "brave",
+        aiAssistant: "gemini",
         calendarIframe: "",
         tuneInId: "",
         radioEnabled: true,
@@ -235,6 +237,23 @@ function loadSearch(settings) {
 function updateSearchPlaceholder(engineKey) {
     const engine = SEARCH_ENGINES[engineKey] || SEARCH_ENGINES.brave;
     $("#search-input").attr("placeholder", t("search.placeholder", { engine: engine.name }));
+}
+
+// ---------------------------------------------------------------------------------------------
+// AI assistant quick-start button
+// ---------------------------------------------------------------------------------------------
+
+const AI_ASSISTANTS = {
+    gemini: { name: "Gemini", url: "https://gemini.google.com/app" },
+    chatgpt: { name: "ChatGPT", url: "https://chatgpt.com/" },
+    claude: { name: "Claude", url: "https://claude.ai/new" },
+    copilot: { name: "Copilot", url: "https://copilot.microsoft.com/" },
+    perplexity: { name: "Perplexity", url: "https://www.perplexity.ai/" }
+};
+
+function applyAiAssistant(assistantKey) {
+    const assistant = AI_ASSISTANTS[assistantKey] || AI_ASSISTANTS.gemini;
+    $("#ai-btn").attr("href", assistant.url);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -663,6 +682,7 @@ function loadSettingsModal(settings) {
             userName: $("#settings-user-name").val().trim(),
             accentColor: $("#settings-accent-color").val(),
             searchEngine: $("#settings-search-engine").val(),
+            aiAssistant: $("#settings-ai-assistant").val(),
             calendarIframe: $("#settings-calendar-iframe").val().trim(),
             tuneInId: $("#settings-tunein-id").val().trim(),
             radioEnabled: $("#settings-radio-enabled").is(":checked"),
@@ -674,6 +694,7 @@ function loadSettingsModal(settings) {
             AppSettings = newSettings;
             applyLanguage(newSettings.language);
             applyAccentColor(newSettings.accentColor);
+            applyAiAssistant(newSettings.aiAssistant);
             applyBackground();
             loadCalendar(newSettings);
             loadSearch(newSettings);
@@ -700,6 +721,7 @@ function fillSettingsForm(settings) {
     $("#settings-language").val(settings.language);
     $("#settings-user-name").val(settings.userName || "");
     $("#settings-search-engine").val(SEARCH_ENGINES[settings.searchEngine] ? settings.searchEngine : "brave");
+    $("#settings-ai-assistant").val(AI_ASSISTANTS[settings.aiAssistant] ? settings.aiAssistant : "gemini");
     $("#settings-accent-color").val(settings.accentColor || "#6366f1");
     $("#settings-calendar-iframe").val(settings.calendarIframe || "");
     $("#settings-radio-enabled").prop("checked", settings.radioEnabled !== false);

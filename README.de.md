@@ -32,8 +32,8 @@ Build-Schritt – reines HTML/CSS/JS plus jQuery.
   Begrüßung ("Guten Morgen, ...").
 - **Aussehen** – Akzentfarbe einstellen und optional ein Hintergrundbild hochladen. Ohne Bild wird
   nur die Hintergrundfarbe verwendet.
-- **Gemini-Schnellzugriff** – ein kleiner Knopf neben der Suchleiste öffnet einen neuen
-  Gemini-Chat.
+- **KI-Schnellzugriff** – ein kleiner Knopf neben der Suchleiste öffnet einen neuen Chat mit dem
+  in den Einstellungen gewählten Assistenten (Gemini, ChatGPT, Claude, Copilot oder Perplexity).
 - **Zweisprachige Oberfläche** – Deutsch und Englisch, jederzeit umschaltbar in den Einstellungen;
   wirkt sofort, kein Neuladen nötig.
 - Radio und das Meeting-Widget lassen sich jeweils komplett deaktivieren, falls nicht benötigt.
@@ -58,6 +58,7 @@ Zahnrad-Symbol (oben rechts) öffnet die **Einstellungen**:
 | Sprache | Schaltet die gesamte Oberfläche zwischen Deutsch und Englisch um. |
 | Dein Name | Zeigt eine zeitabhängige Begrüßung bei der Uhr. Leer lassen, um sie auszublenden. |
 | Suchmaschine | An welche Suchmaschine die Suchleiste die Anfrage sendet. |
+| KI-Assistent | Welchen Assistenten der KI-Knopf (neben der Suchleiste) öffnet. |
 | Akzentfarbe | Die Hervorhebungsfarbe des Dashboards (Buttons, Fokus-Zustände, aktive Umschalter). |
 | Hintergrundbild | Bild hochladen, das als Seitenhintergrund dient; "Entfernen" setzt wieder auf reine Farbe zurück. Wird lokal im Browser gespeichert, nirgendwo hochgeladen. |
 | Kalender-Einbettung | Hier einen `<iframe>`-Embed-Schnipsel einfügen, um einen Kalender anzuzeigen; leer lassen, um das Kalender-Widget komplett auszublenden. |

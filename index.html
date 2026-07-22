@@ -54,7 +54,7 @@
                             </svg>
                             <input type="search" name="q" id="search-input" autofocus autocomplete="off">
                         </form>
-                        <a id="gemini-btn" href="https://gemini.google.com/app" data-i18n-title="gemini.title" title="Neuer Gemini-Chat">
+                        <a id="ai-btn" href="https://gemini.google.com/app" data-i18n-title="ai.title" title="Neuer KI-Chat">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l1.912 5.813L20 10.5l-6.088 1.687L12 18l-1.912-5.813L4 10.5l6.088-1.687L12 3z" />
                             </svg>
@@ -123,7 +123,7 @@
 
                 <div id="meetings-list"></div>
 
-                <form id="meeting-form">
+                <form id="meeting-form" class="modal-form">
                     <input type="hidden" id="meeting-id">
                     <input type="hidden" id="meeting-recurrence" value="weekly">
 
@@ -205,7 +205,7 @@
                     <button type="button" class="modal-close" data-i18n-title="close" title="Schließen">&times;</button>
                 </div>
 
-                <form id="settings-form">
+                <form id="settings-form" class="modal-form">
                     <div class="form-row">
                         <label for="settings-language" data-i18n="settings.language">Sprache</label>
                         <select id="settings-language">
@@ -228,6 +228,17 @@
                             <option value="bing">Bing</option>
                             <option value="startpage">Startpage</option>
                             <option value="ecosia">Ecosia</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="settings-ai-assistant" data-i18n="settings.aiAssistant">KI-Assistent</label>
+                        <select id="settings-ai-assistant">
+                            <option value="gemini">Gemini</option>
+                            <option value="chatgpt">ChatGPT</option>
+                            <option value="claude">Claude</option>
+                            <option value="copilot">Copilot</option>
+                            <option value="perplexity">Perplexity</option>
                         </select>
                     </div>
 
