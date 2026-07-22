@@ -558,6 +558,192 @@ body::after {
     background: rgba(30, 41, 59, 0.85);
 }
 
+/* Floating Pomodoro Button (bottom-center, between Meetings on the left and Radio on the right) */
+#pomodoro-toggle {
+    position: fixed;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--card-border);
+    color: var(--text-primary);
+    cursor: pointer;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                background-color 0.25s, border-color 0.25s, box-shadow 0.3s;
+    z-index: 1001;
+}
+
+#pomodoro-toggle svg {
+    width: 24px;
+    height: 24px;
+}
+
+#pomodoro-toggle:hover {
+    transform: translateX(-50%) scale(1.1);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 20px var(--accent-glow);
+    background: rgba(30, 41, 59, 0.85);
+}
+
+/* Pulses while a phase is actively running — independent of ".active" (panel open/closed), which
+   the click handler in src/dashboard.js manages separately. */
+#pomodoro-toggle.running {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 rgba(99, 102, 241, 0.5);
+    animation: pomodoroPulse 2s infinite;
+}
+
+@keyframes pomodoroPulse {
+    0% { box-shadow: 0 0 0 0 var(--accent-glow); }
+    70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
+/* Card look shared by the dashboard's floating panel and the standalone pomodoro.html popup.
+   Floating/overlay positioning (fixed, transform, opacity) is added separately below, scoped to
+   the dashboard page only — the popup is a real window and needs none of that. */
+#pomodoro-panel {
+    width: 260px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+.pomodoro-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.pomodoro-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--accent-color);
+    flex-shrink: 0;
+}
+
+.pomodoro-header span {
+    flex-grow: 1;
+    text-align: left;
+}
+
+#pomodoro-open-window {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    transition: color 0.2s;
+}
+
+#pomodoro-open-window svg {
+    width: 16px;
+    height: 16px;
+}
+
+#pomodoro-open-window:hover {
+    color: var(--text-primary);
+}
+
+#pomodoro-time {
+    font-size: 44px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    margin: 12px 0 2px;
+}
+
+#pomodoro-round {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+}
+
+.pomodoro-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+#pomodoro-play-pause {
+    flex-grow: 1;
+}
+
+.pomodoro-controls #pomodoro-skip,
+.pomodoro-controls #pomodoro-reset {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.pomodoro-controls svg {
+    width: 16px;
+    height: 16px;
+}
+
+.pomodoro-controls #pomodoro-skip:hover,
+.pomodoro-controls #pomodoro-reset:hover {
+    color: var(--text-primary);
+    border-color: var(--card-border-hover);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Floating overlay behavior — only on the dashboard page, not the standalone popup window */
+body:not(.pomodoro-window) #pomodoro-panel {
+    position: fixed;
+    bottom: 95px;
+    left: 50%;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(20px) scale(0.95);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body:not(.pomodoro-window) #pomodoro-panel.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* The standalone popup window: just center the card in the window, no overlay chrome needed */
+body.pomodoro-window {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
 /* Floating Settings Button (top-right corner) */
 #settings-toggle {
     position: fixed;

@@ -7,6 +7,8 @@
         <script src="./src/jquery-3.5.1.min.js"></script>
         <script src="./src/jquery-ui/jquery-ui.min.js"></script>
         <script src="./src/i18n.js"></script>
+        <script src="./src/pomodoro-logic.js"></script>
+        <script src="./src/pomodoro-ui.js"></script>
         <script src="./src/dashboard.js"></script>
         <link rel="stylesheet" href="src/dashboard.css">
         <title>Dashboard</title>
@@ -92,6 +94,44 @@
         <button id="radio-toggle" data-i18n-title="radio.toggleTitle" title="Radio Player">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+        </button>
+
+        <!-- Floating Pomodoro Timer Widget. The background service worker (src/background.js) is
+             the actual timekeeper, so this keeps counting/notifying even while this panel is
+             closed or the tab isn't open at all; this is just the view + remote control. -->
+        <div id="pomodoro-panel">
+            <div class="pomodoro-header">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="pomodoro-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span id="pomodoro-phase">Arbeiten</span>
+                <button type="button" id="pomodoro-open-window" data-i18n-title="pomodoro.openWindow" title="In eigenem Fenster öffnen">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                </button>
+            </div>
+            <div id="pomodoro-time">25:00</div>
+            <div id="pomodoro-round"></div>
+            <div class="pomodoro-controls">
+                <button type="button" id="pomodoro-play-pause" class="btn btn-primary">Start</button>
+                <button type="button" id="pomodoro-skip" data-i18n-title="pomodoro.skip" title="Überspringen">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                </button>
+                <button type="button" id="pomodoro-reset" data-i18n-title="pomodoro.reset" title="Zurücksetzen">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <button id="pomodoro-toggle" data-i18n-title="pomodoro.toggleTitle" title="Pomodoro-Timer">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
         </button>
 
@@ -276,6 +316,33 @@
                     <div class="form-row form-row-checkbox">
                         <input type="checkbox" id="settings-meetings-enabled">
                         <label for="settings-meetings-enabled" data-i18n="settings.meetingsEnabled">Meeting Quick-Join anzeigen</label>
+                    </div>
+
+                    <div class="form-row form-row-checkbox">
+                        <input type="checkbox" id="settings-pomodoro-enabled">
+                        <label for="settings-pomodoro-enabled" data-i18n="settings.pomodoroEnabled">Pomodoro-Timer anzeigen</label>
+                    </div>
+
+                    <div class="form-row form-row-split">
+                        <div>
+                            <label for="settings-pomodoro-work" data-i18n="settings.pomodoroWork">Arbeitsdauer (Min.)</label>
+                            <input type="number" id="settings-pomodoro-work" min="1" max="180">
+                        </div>
+                        <div>
+                            <label for="settings-pomodoro-short-break" data-i18n="settings.pomodoroShortBreak">Kurze Pause (Min.)</label>
+                            <input type="number" id="settings-pomodoro-short-break" min="1" max="180">
+                        </div>
+                    </div>
+
+                    <div class="form-row form-row-split">
+                        <div>
+                            <label for="settings-pomodoro-long-break" data-i18n="settings.pomodoroLongBreak">Lange Pause (Min.)</label>
+                            <input type="number" id="settings-pomodoro-long-break" min="1" max="180">
+                        </div>
+                        <div>
+                            <label for="settings-pomodoro-rounds" data-i18n="settings.pomodoroRounds">Runden bis lange Pause</label>
+                            <input type="number" id="settings-pomodoro-rounds" min="1" max="12">
+                        </div>
                     </div>
 
                     <div class="form-actions">

@@ -4,8 +4,8 @@
 
 A browser extension (Manifest V3, works in Brave and other Chromium-based browsers) that replaces
 the new tab page with a personal dashboard: your bookmarks with icons, a configurable search bar,
-a calendar embed, a meeting quick-join widget, a radio player, and a clock — all styled as a single
-glass-morphism dashboard.
+a calendar embed, a meeting quick-join widget, a Pomodoro timer, a radio player, and a clock — all
+styled as a single glass-morphism dashboard.
 
 Everything is configured **inside the app** through the Settings modal (the gear icon, top right).
 There is no config file to edit and no build step — it's plain HTML/CSS/JS plus jQuery.
@@ -25,6 +25,14 @@ There is no config file to edit and no build step — it's plain HTML/CSS/JS plu
   from a small modal (the calendar icon, bottom left). 15 minutes before a meeting starts, a
   "join now" card appears; joining copies the password (if you set one) to your clipboard and opens
   the meeting link.
+- **Pomodoro timer** — configurable focus/short-break/long-break durations and rounds, from a
+  floating panel (bottom center). Breaks start automatically; the next focus session always needs
+  a manual start. A background service worker (`chrome.alarms`) does the actual timekeeping, so it
+  reliably notifies you even if the New Tab tab isn't open — you don't have to keep it around. You
+  can also pop the timer out into its own small window (button inside the panel) to keep it visible
+  while you work elsewhere. The custom chime only plays from an open dashboard tab or popup window
+  (browser notifications can't play custom audio from the background); if neither is open when a
+  phase ends, you still get the browser notification, just with the OS's own notification sound.
 - **Radio player** — embeds a TuneIn station by ID, toggled from a floating button (bottom right).
 - **Clock + optional greeting** — set your name in Settings for a time-of-day greeting ("Good
   morning, ...").
@@ -34,7 +42,8 @@ There is no config file to edit and no build step — it's plain HTML/CSS/JS plu
   assistant of your choice (Gemini, ChatGPT, Claude, Copilot, or Perplexity), picked in Settings.
 - **Bilingual UI** — German and English, switchable at any time in Settings; takes effect
   immediately, no reload needed.
-- Radio and the meeting widget can each be turned off entirely if you don't need them.
+- Radio, the meeting widget, and the Pomodoro timer can each be turned off entirely if you don't
+  need them.
 
 ## Installation
 
@@ -62,6 +71,11 @@ Click the gear icon (top right) to open **Settings**:
 | Show radio player | Toggles the floating radio button/panel. |
 | TuneIn station ID | The station ID from a TuneIn station's URL, e.g. `s34682` from `tunein.com/radio/.../s34682`. |
 | Show meeting quick-join | Toggles the meeting button, modal, and the "join now" card. |
+| Show Pomodoro timer | Toggles the Pomodoro button/panel and stops its background alarm. |
+| Focus duration (min) | Length of a focus session. |
+| Short break (min) | Length of a short break, taken after every focus session except the last of a cycle. |
+| Long break (min) | Length of the long break, taken after the configured number of rounds. |
+| Rounds until long break | How many focus sessions make up one cycle before a long break. |
 
 Meetings themselves are managed separately, from their own modal (the calendar-shaped button,
 bottom left): add a name, meeting type (Zoom or MS Teams), the full join link, an optional
@@ -76,6 +90,11 @@ password, a start/end time, and either a weekday (recurs weekly) or a specific d
   signed-in browser profiles).
 - **`unlimitedStorage`** — lifts the default quota so an uploaded background image (which can be a
   few MB as a data URL) fits comfortably in `chrome.storage.local`.
+- **`alarms`** — lets the background service worker schedule the exact moment a Pomodoro phase
+  ends (`chrome.alarms`), so the timer keeps running and notifying even while no dashboard tab or
+  popup window is open.
+- **`notifications`** — lets the background service worker show a browser notification when a
+  Pomodoro phase ends.
 
 ## Privacy
 
@@ -90,9 +109,17 @@ against Chromium's local cache.
 Plain HTML/CSS/JS, no build step:
 
 - `index.html` — page structure and widget markup.
-- `src/dashboard.js` — all behavior (settings, bookmarks, search, calendar, radio, meetings, clock).
+- `src/dashboard.js` — all dashboard behavior (settings, bookmarks, search, calendar, radio,
+  meetings, clock).
 - `src/i18n.js` — the German/English translation dictionary and the `t()` helper.
-- `src/dashboard.css` — styling.
+- `src/dashboard.css` — styling (shared by `index.html` and `pomodoro.html`).
+- `pomodoro.html` + `src/pomodoro-window.js` — the standalone Pomodoro popup window.
+- `src/pomodoro-ui.js` — Pomodoro widget rendering/controls, shared by the dashboard panel and the
+  popup window (both are "thin clients" — see below).
+- `src/pomodoro-logic.js` — pure Pomodoro state-transition logic with no DOM/`chrome.*` dependency,
+  shared by the background service worker and both pages.
+- `src/background.js` — background service worker; the single source of truth for the Pomodoro
+  timer via `chrome.alarms`, so it keeps running and notifying independent of any open page.
 - `manifest.json` — extension manifest (Manifest V3).
 
 To add a UI string: add a key under both `de` and `en` in `src/i18n.js`, then either add a

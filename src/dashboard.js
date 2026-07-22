@@ -23,6 +23,7 @@ let pendingBackgroundImage;
 let meetingsModalWired = false;
 let settingsModalWired = false;
 let radioWired = false;
+let pomodoroWired = false;
 let meetingsInterval = null;
 
 $(document).ready(() => {
@@ -45,6 +46,7 @@ $(document).ready(() => {
         loadSearch(settings);
         loadRadio(settings);
         loadMeetings(settings);
+        loadPomodoro(settings);
         applyGreeting(settings.userName);
         loadSettingsModal(settings);
     });
@@ -71,7 +73,12 @@ function getDefaultSettings() {
         calendarIframe: "",
         tuneInId: "",
         radioEnabled: true,
-        meetingsEnabled: true
+        meetingsEnabled: true,
+        pomodoroEnabled: true,
+        pomodoroWorkMinutes: 25,
+        pomodoroShortBreakMinutes: 5,
+        pomodoroLongBreakMinutes: 15,
+        pomodoroRoundsUntilLongBreak: 4
     };
 }
 
@@ -139,6 +146,7 @@ function applyLanguage(lang) {
     loadBookmarks();
     renderMeetingsList();
     updateMeetings();
+    renderPomodoroTick(); // from pomodoro-ui.js; re-renders phase/round/button labels
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -286,6 +294,61 @@ function loadRadio(settings) {
             $("#radio-panel").removeClass("active");
             $("#radio-toggle").removeClass("active");
         }
+    });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Pomodoro timer
+//
+// The actual timekeeping (chrome.alarms) and notification live in the background service worker
+// (src/background.js) so the timer keeps running and notifies even when this panel — or the whole
+// New Tab page — isn't open. This function only shows/hides the widget and wires up its controls;
+// the countdown rendering and button-click handling are shared with pomodoro.html via
+// initPomodoroWidget() (src/pomodoro-ui.js).
+// ---------------------------------------------------------------------------------------------
+
+function loadPomodoro(settings) {
+    // initPomodoroWidget() (src/pomodoro-ui.js) calls chrome.storage/chrome.runtime directly with
+    // no guard of its own, so treat a missing extension context (e.g. the file opened directly,
+    // outside the extension) the same as "disabled" here rather than letting it throw.
+    const hasChrome = typeof chrome !== "undefined" && chrome.storage && chrome.runtime;
+    const enabled = hasChrome && settings.pomodoroEnabled !== false;
+    $("#pomodoro-toggle, #pomodoro-panel").toggleClass("feature-hidden", !enabled);
+
+    if (!enabled) {
+        $("#pomodoro-panel, #pomodoro-toggle").removeClass("active");
+        if (hasChrome) {
+            chrome.runtime.sendMessage({ type: "pomodoro:disable" });
+        }
+        return;
+    }
+
+    initPomodoroWidget();
+
+    if (pomodoroWired) return;
+    pomodoroWired = true;
+
+    // Toggle panel visibility
+    $("#pomodoro-toggle").on("click", function() {
+        $("#pomodoro-panel").toggleClass("active");
+        $(this).toggleClass("active");
+    });
+
+    // Close panel when clicking outside it
+    $(document).on("click", function(event) {
+        if (!$(event.target).closest("#pomodoro-panel, #pomodoro-toggle").length) {
+            $("#pomodoro-panel").removeClass("active");
+            $("#pomodoro-toggle").removeClass("active");
+        }
+    });
+
+    $("#pomodoro-open-window").on("click", () => {
+        chrome.windows.create({
+            url: chrome.runtime.getURL("pomodoro.html"),
+            type: "popup",
+            width: 300,
+            height: 420
+        });
     });
 }
 
@@ -689,7 +752,12 @@ function loadSettingsModal(settings) {
             calendarIframe: $("#settings-calendar-iframe").val().trim(),
             tuneInId: $("#settings-tunein-id").val().trim(),
             radioEnabled: $("#settings-radio-enabled").is(":checked"),
-            meetingsEnabled: $("#settings-meetings-enabled").is(":checked")
+            meetingsEnabled: $("#settings-meetings-enabled").is(":checked"),
+            pomodoroEnabled: $("#settings-pomodoro-enabled").is(":checked"),
+            pomodoroWorkMinutes: Number($("#settings-pomodoro-work").val()) || 25,
+            pomodoroShortBreakMinutes: Number($("#settings-pomodoro-short-break").val()) || 5,
+            pomodoroLongBreakMinutes: Number($("#settings-pomodoro-long-break").val()) || 15,
+            pomodoroRoundsUntilLongBreak: Number($("#settings-pomodoro-rounds").val()) || 4
         };
 
         // Applies every affected widget immediately, without requiring a page reload.
@@ -703,6 +771,7 @@ function loadSettingsModal(settings) {
             loadSearch(newSettings);
             loadRadio(newSettings);
             loadMeetings(newSettings);
+            loadPomodoro(newSettings);
             applyGreeting(newSettings.userName);
             $("#settings-modal").removeClass("active");
         };
@@ -730,6 +799,11 @@ function fillSettingsForm(settings) {
     $("#settings-radio-enabled").prop("checked", settings.radioEnabled !== false);
     $("#settings-tunein-id").val(settings.tuneInId || "");
     $("#settings-meetings-enabled").prop("checked", settings.meetingsEnabled !== false);
+    $("#settings-pomodoro-enabled").prop("checked", settings.pomodoroEnabled !== false);
+    $("#settings-pomodoro-work").val(settings.pomodoroWorkMinutes || 25);
+    $("#settings-pomodoro-short-break").val(settings.pomodoroShortBreakMinutes || 5);
+    $("#settings-pomodoro-long-break").val(settings.pomodoroLongBreakMinutes || 15);
+    $("#settings-pomodoro-rounds").val(settings.pomodoroRoundsUntilLongBreak || 4);
 
     pendingBackgroundImage = undefined;
     $("#settings-background-file").val("");

@@ -33,6 +33,27 @@ const TRANSLATIONS = {
             panelTitle: "TuneIn Radio",
             toggleTitle: "Radio-Player"
         },
+        pomodoro: {
+            toggleTitle: "Pomodoro-Timer",
+            panelTitle: "Pomodoro",
+            openWindow: "In eigenem Fenster öffnen",
+            phase: {
+                work: "Arbeiten",
+                shortBreak: "Kurze Pause",
+                longBreak: "Lange Pause"
+            },
+            round: "Runde {current} von {total}",
+            start: "Start",
+            pause: "Pause",
+            skip: "Überspringen",
+            reset: "Zurücksetzen",
+            notify: {
+                workDoneTitle: "Arbeitsphase beendet",
+                workDoneBody: "Zeit für eine Pause.",
+                breakDoneTitle: "Pause beendet",
+                breakDoneBody: "Bereit für die nächste Runde? Starte sie manuell."
+            }
+        },
         close: "Schließen",
         weekdays: ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
         greeting: {
@@ -81,6 +102,11 @@ const TRANSLATIONS = {
             radioEnabled: "Radio-Player anzeigen",
             tuneInId: "TuneIn Sender-ID",
             meetingsEnabled: "Meeting Quick-Join anzeigen",
+            pomodoroEnabled: "Pomodoro-Timer anzeigen",
+            pomodoroWork: "Arbeitsdauer (Min.)",
+            pomodoroShortBreak: "Kurze Pause (Min.)",
+            pomodoroLongBreak: "Lange Pause (Min.)",
+            pomodoroRounds: "Runden bis lange Pause",
             cancel: "Abbrechen",
             save: "Speichern"
         }
@@ -103,6 +129,27 @@ const TRANSLATIONS = {
         radio: {
             panelTitle: "TuneIn Radio",
             toggleTitle: "Radio Player"
+        },
+        pomodoro: {
+            toggleTitle: "Pomodoro timer",
+            panelTitle: "Pomodoro",
+            openWindow: "Open in separate window",
+            phase: {
+                work: "Focus",
+                shortBreak: "Short break",
+                longBreak: "Long break"
+            },
+            round: "Round {current} of {total}",
+            start: "Start",
+            pause: "Pause",
+            skip: "Skip",
+            reset: "Reset",
+            notify: {
+                workDoneTitle: "Focus session done",
+                workDoneBody: "Time for a break.",
+                breakDoneTitle: "Break's over",
+                breakDoneBody: "Ready for the next round? Start it manually."
+            }
         },
         close: "Close",
         weekdays: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
@@ -152,6 +199,11 @@ const TRANSLATIONS = {
             radioEnabled: "Show radio player",
             tuneInId: "TuneIn station ID",
             meetingsEnabled: "Show meeting quick-join",
+            pomodoroEnabled: "Show Pomodoro timer",
+            pomodoroWork: "Focus duration (min)",
+            pomodoroShortBreak: "Short break (min)",
+            pomodoroLongBreak: "Long break (min)",
+            pomodoroRounds: "Rounds until long break",
             cancel: "Cancel",
             save: "Save"
         }
