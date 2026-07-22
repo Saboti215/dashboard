@@ -4,8 +4,9 @@
 
 A browser extension (Manifest V3, works in Brave and other Chromium-based browsers) that replaces
 the new tab page with a personal dashboard: your bookmarks with icons, a configurable search bar,
-a calendar embed, a meeting quick-join widget, a Pomodoro timer, a radio player, and a clock — all
-styled as a single glass-morphism dashboard.
+a calendar embed, a meeting quick-join widget, a Pomodoro timer, a radio player, weather, holidays,
+a quote of the day, a world clock, and, well, an actual clock — all styled as a single
+glass-morphism dashboard.
 
 Everything is configured **inside the app** through the Settings modal (the gear icon, top right).
 There is no config file to edit and no build step — it's plain HTML/CSS/JS plus jQuery.
@@ -36,6 +37,18 @@ There is no config file to edit and no build step — it's plain HTML/CSS/JS plu
 - **Radio player** — embeds a TuneIn station by ID, toggled from a floating button (bottom right).
 - **Clock + optional greeting** — set your name in Settings for a time-of-day greeting ("Good
   morning, ...").
+- **World clock** — up to two extra timezones shown right under the main clock, fully offline
+  (built on the browser's own `Intl` API — no network request at all).
+- **"Today" card** — a compact widget below your bookmarks bundling three optional info snippets,
+  each toggled independently and the whole card hidden if none are enabled:
+  - **Weather** — current temperature and today's low/high for a place you type in Settings, via
+    [Open-Meteo](https://open-meteo.com) (free, no API key, no tracking). Cached for ~30 minutes so
+    opening new tabs doesn't keep re-fetching.
+  - **Public holidays** — today's holiday, or the next upcoming one, for a country code you set in
+    Settings, via [Nager.Date](https://date.nager.at) (free, no API key). Cached per year/country.
+  - **Quote of the day** — rotates once a day through a list bundled with the extension itself
+    (`src/quotes-data.js`) — deliberately offline instead of a live API, so it never depends on a
+    third party being up and never costs a network request.
 - **Appearance** — set an accent color and, optionally, upload a background image. Without an
   image, only the background color is used.
 - **AI assistant shortcut** — a small button next to the search bar opens a new chat with the
@@ -68,6 +81,10 @@ Click the gear icon (top right) to open **Settings**:
 | Accent color | The dashboard's highlight color (buttons, focus states, active toggles). |
 | Background image | Upload an image to use as the page background; "Remove" clears it back to a plain color. Stored locally in the browser, never uploaded anywhere. |
 | Calendar embed | Paste an `<iframe>` embed snippet here to show a calendar; leave empty to hide the calendar widget entirely. |
+| Location | City name for the weather widget; leave empty to hide it. |
+| Country code | Two-letter country code for public holidays (e.g. `DE`); leave empty to hide that row. |
+| Show quote of the day | Toggles the quote-of-the-day row. |
+| World clock 1 / 2 | Pick up to two extra timezones shown under the main clock; "— None —" hides that slot. |
 | Show radio player | Toggles the floating radio button/panel. |
 | TuneIn station ID | The station ID from a TuneIn station's URL, e.g. `s34682` from `tunein.com/radio/.../s34682`. |
 | Show meeting quick-join | Toggles the meeting button, modal, and the "join now" card. |
@@ -101,8 +118,10 @@ password, a start/end time, and either a weekday (recurs weekly) or a specific d
 All configuration and data (settings, meetings, the background image) stays in your browser's own
 `chrome.storage` — nothing is sent to any server operated by this project. The only outbound
 requests this dashboard makes are the ones you'd expect from its features: your chosen search
-engine when you search, the calendar/radio iframes you configure yourself, and favicon lookups
-against Chromium's local cache.
+engine when you search, the calendar/radio iframes you configure yourself, favicon lookups against
+Chromium's local cache, and — only if you set a location/country in Settings — weather lookups
+against Open-Meteo and holiday lookups against Nager.Date. The quote of the day is bundled with the
+extension and never makes a network request at all.
 
 ## Development
 
@@ -120,6 +139,9 @@ Plain HTML/CSS/JS, no build step:
   shared by the background service worker and both pages.
 - `src/background.js` — background service worker; the single source of truth for the Pomodoro
   timer via `chrome.alarms`, so it keeps running and notifying independent of any open page.
+- `src/extras.js` — weather, holidays, quote of the day, and world clock: each has its own
+  `loadX(settings)` entry point following the same pattern as `loadRadio()`/`loadCalendar()`.
+- `src/quotes-data.js` — the bundled quote-of-the-day list (plain data, no logic).
 - `manifest.json` — extension manifest (Manifest V3).
 
 To add a UI string: add a key under both `de` and `en` in `src/i18n.js`, then either add a

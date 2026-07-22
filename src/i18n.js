@@ -17,11 +17,39 @@ const TRANSLATIONS = {
     de: {
         widgets: {
             calendar: "Kalender",
-            bookmarks: "Lesezeichen"
+            bookmarks: "Lesezeichen",
+            today: "Heute"
         },
         bookmarks: {
             general: "Allgemein",
             misc: "Sonstiges"
+        },
+        extras: {
+            loading: "Lädt...",
+            weather: {
+                error: "Wetter nicht verfügbar",
+                condition: {
+                    clear: "Klar",
+                    mostlyClear: "Meist klar",
+                    partlyCloudy: "Teilweise bewölkt",
+                    overcast: "Bewölkt",
+                    fog: "Nebel",
+                    drizzle: "Nieselregen",
+                    rain: "Regen",
+                    heavyRain: "Starker Regen",
+                    snow: "Schnee",
+                    heavySnow: "Starker Schneefall",
+                    showers: "Schauer",
+                    heavyShowers: "Starke Schauer",
+                    thunderstorm: "Gewitter"
+                }
+            },
+            holiday: {
+                error: "Feiertage nicht verfügbar",
+                today: "Heute: {name}",
+                next: "Nächster Feiertag: {name} ({date})",
+                none: "Keine weiteren Feiertage dieses Jahr"
+            }
         },
         search: {
             placeholder: "Mit {engine} suchen..."
@@ -93,6 +121,10 @@ const TRANSLATIONS = {
                 general: "Allgemein",
                 search: "Suche & KI",
                 calendar: "Kalender",
+                weather: "Wetter",
+                holidays: "Feiertage",
+                quote: "Zitat des Tages",
+                worldClock: "Weltuhr",
                 radio: "Radio",
                 meetings: "Meetings",
                 pomodoro: "Pomodoro"
@@ -107,6 +139,14 @@ const TRANSLATIONS = {
             backgroundRemove: "Entfernen",
             calendarIframe: "Kalender-Einbettung",
             calendarHint: "Google Kalender → Einstellungen → \"Kalender integrieren\" → den Code aus dem <iframe>-Feld hier einfügen.",
+            weatherLocation: "Ort",
+            weatherHint: "Ortsname, z. B. \"Berlin\" oder \"Neuss\". Wetterdaten kommen von Open-Meteo (kostenlos, ohne Anmeldung, ohne Tracking).",
+            holidayCountry: "Länder-Code",
+            holidayHint: "Zweistelliger Ländercode, z. B. \"DE\" für Deutschland, \"AT\" für Österreich, \"CH\" für die Schweiz, \"US\" für die USA.",
+            quoteEnabled: "Zitat des Tages anzeigen",
+            worldClock1: "Weltuhr 1",
+            worldClock2: "Weltuhr 2",
+            worldClockNone: "— Keine —",
             radioEnabled: "Radio-Player anzeigen",
             tuneInId: "TuneIn Sender-ID",
             tuneInHint: "Die Sender-ID aus der URL eines TuneIn-Senders, z. B. \"s34682\" aus tunein.com/radio/.../s34682.",
@@ -123,11 +163,39 @@ const TRANSLATIONS = {
     en: {
         widgets: {
             calendar: "Calendar",
-            bookmarks: "Bookmarks"
+            bookmarks: "Bookmarks",
+            today: "Today"
         },
         bookmarks: {
             general: "General",
             misc: "Other"
+        },
+        extras: {
+            loading: "Loading...",
+            weather: {
+                error: "Weather unavailable",
+                condition: {
+                    clear: "Clear",
+                    mostlyClear: "Mostly clear",
+                    partlyCloudy: "Partly cloudy",
+                    overcast: "Overcast",
+                    fog: "Fog",
+                    drizzle: "Drizzle",
+                    rain: "Rain",
+                    heavyRain: "Heavy rain",
+                    snow: "Snow",
+                    heavySnow: "Heavy snow",
+                    showers: "Showers",
+                    heavyShowers: "Heavy showers",
+                    thunderstorm: "Thunderstorm"
+                }
+            },
+            holiday: {
+                error: "Holidays unavailable",
+                today: "Today: {name}",
+                next: "Next holiday: {name} ({date})",
+                none: "No more holidays this year"
+            }
         },
         search: {
             placeholder: "Search with {engine}..."
@@ -199,6 +267,10 @@ const TRANSLATIONS = {
                 general: "General",
                 search: "Search & AI",
                 calendar: "Calendar",
+                weather: "Weather",
+                holidays: "Holidays",
+                quote: "Quote of the day",
+                worldClock: "World clock",
                 radio: "Radio",
                 meetings: "Meetings",
                 pomodoro: "Pomodoro"
@@ -213,6 +285,14 @@ const TRANSLATIONS = {
             backgroundRemove: "Remove",
             calendarIframe: "Calendar embed",
             calendarHint: "Google Calendar → Settings → \"Integrate calendar\" → paste the code from the <iframe> field here.",
+            weatherLocation: "Location",
+            weatherHint: "A place name, e.g. \"Berlin\" or \"New York\". Weather data comes from Open-Meteo (free, no sign-up, no tracking).",
+            holidayCountry: "Country code",
+            holidayHint: "Two-letter country code, e.g. \"DE\" for Germany, \"AT\" for Austria, \"CH\" for Switzerland, \"US\" for the United States.",
+            quoteEnabled: "Show quote of the day",
+            worldClock1: "World clock 1",
+            worldClock2: "World clock 2",
+            worldClockNone: "— None —",
             radioEnabled: "Show radio player",
             tuneInId: "TuneIn station ID",
             tuneInHint: "The station ID from a TuneIn station's URL, e.g. \"s34682\" from tunein.com/radio/.../s34682.",

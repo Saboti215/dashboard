@@ -1,7 +1,7 @@
 {
   "name": "Personal Dashboard New Tab",
-  "description": "Replaces the new tab page with a personal dashboard: bookmarks with icons, a configurable search bar, calendar embed, meeting quick-join, a Pomodoro timer, and more.",
-  "version": "0.5",
+  "description": "Replaces the new tab page with a personal dashboard: bookmarks with icons, a configurable search bar, calendar embed, meeting quick-join, a Pomodoro timer, weather, holidays, a quote of the day, a world clock, and more.",
+  "version": "0.6",
   "incognito": "split",
   "chrome_url_overrides": {
     "newtab": "index.html"

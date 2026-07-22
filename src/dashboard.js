@@ -44,6 +44,10 @@ $(document).ready(() => {
         applyBackground();
         loadCalendar(settings);
         loadSearch(settings);
+        loadWeather(settings);
+        loadHolidays(settings);
+        loadQuote(settings);
+        loadWorldClock(settings);
         loadRadio(settings);
         loadMeetings(settings);
         loadPomodoro(settings);
@@ -71,6 +75,11 @@ function getDefaultSettings() {
         searchEngine: "brave",
         aiAssistant: "gemini",
         calendarIframe: "",
+        weatherLocation: "",
+        holidayCountry: "",
+        quoteEnabled: true,
+        worldClock1: "",
+        worldClock2: "",
         tuneInId: "",
         radioEnabled: true,
         meetingsEnabled: true,
@@ -147,6 +156,12 @@ function applyLanguage(lang) {
     renderMeetingsList();
     updateMeetings();
     renderPomodoroTick(); // from pomodoro-ui.js; re-renders phase/round/button labels
+
+    // Re-renders from their existing cache (no re-fetch) purely to pick up the new language.
+    loadWeather(AppSettings);
+    loadHolidays(AppSettings);
+    loadQuote(AppSettings);
+    loadWorldClock(AppSettings);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -380,6 +395,7 @@ function loadClock() {
         $("#clock-time").text(getClockTime());
         $("#clock-date").text(getClockDate());
         applyGreeting(AppSettings.userName);
+        loadWorldClock(AppSettings); // from src/extras.js
     }, 1000);
 }
 
@@ -763,6 +779,11 @@ function loadSettingsModal(settings) {
             searchEngine: $("#settings-search-engine").val(),
             aiAssistant: $("#settings-ai-assistant").val(),
             calendarIframe: $("#settings-calendar-iframe").val().trim(),
+            weatherLocation: $("#settings-weather-location").val().trim(),
+            holidayCountry: $("#settings-holiday-country").val().trim(),
+            quoteEnabled: $("#settings-quote-enabled").is(":checked"),
+            worldClock1: $("#settings-world-clock-1").val(),
+            worldClock2: $("#settings-world-clock-2").val(),
             tuneInId: $("#settings-tunein-id").val().trim(),
             radioEnabled: $("#settings-radio-enabled").is(":checked"),
             meetingsEnabled: $("#settings-meetings-enabled").is(":checked"),
@@ -782,6 +803,10 @@ function loadSettingsModal(settings) {
             applyBackground();
             loadCalendar(newSettings);
             loadSearch(newSettings);
+            loadWeather(newSettings);
+            loadHolidays(newSettings);
+            loadQuote(newSettings);
+            loadWorldClock(newSettings);
             loadRadio(newSettings);
             loadMeetings(newSettings);
             loadPomodoro(newSettings);
@@ -809,6 +834,11 @@ function fillSettingsForm(settings) {
     $("#settings-ai-assistant").val(AI_ASSISTANTS[settings.aiAssistant] ? settings.aiAssistant : "gemini");
     $("#settings-accent-color").val(settings.accentColor || "#6366f1");
     $("#settings-calendar-iframe").val(settings.calendarIframe || "");
+    $("#settings-weather-location").val(settings.weatherLocation || "");
+    $("#settings-holiday-country").val(settings.holidayCountry || "");
+    $("#settings-quote-enabled").prop("checked", settings.quoteEnabled !== false);
+    $("#settings-world-clock-1").val(WORLD_CLOCK_ZONES[settings.worldClock1] ? settings.worldClock1 : "");
+    $("#settings-world-clock-2").val(WORLD_CLOCK_ZONES[settings.worldClock2] ? settings.worldClock2 : "");
     $("#settings-radio-enabled").prop("checked", settings.radioEnabled !== false);
     $("#settings-radio-details").toggle(settings.radioEnabled !== false);
     $("#settings-tunein-id").val(settings.tuneInId || "");

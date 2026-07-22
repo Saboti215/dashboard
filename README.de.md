@@ -4,8 +4,9 @@
 
 Eine Browser-Erweiterung (Manifest V3, läuft in Brave und anderen Chromium-Browsern), die die
 New-Tab-Seite durch ein persönliches Dashboard ersetzt: Lesezeichen mit Icons, eine konfigurierbare
-Suchleiste, ein Kalender-Embed, ein Meeting-Quick-Join-Widget, ein Pomodoro-Timer, ein Radio-Player
-und eine Uhr – alles im gleichen Glass-Look.
+Suchleiste, ein Kalender-Embed, ein Meeting-Quick-Join-Widget, ein Pomodoro-Timer, ein Radio-Player,
+Wetter, Feiertage, ein Zitat des Tages, eine Weltuhr und – natürlich – eine ganz normale Uhr, alles
+im gleichen Glass-Look.
 
 Die gesamte Konfiguration erfolgt **in der Anwendung selbst** über das Einstellungs-Modal
 (Zahnrad-Symbol, oben rechts). Es gibt keine Konfigurationsdatei zu bearbeiten und keinen
@@ -40,6 +41,19 @@ Build-Schritt – reines HTML/CSS/JS plus jQuery.
   Button (unten rechts).
 - **Uhr + optionale Begrüßung** – Name in den Einstellungen setzen für eine zeitabhängige
   Begrüßung ("Guten Morgen, ...").
+- **Weltuhr** – bis zu zwei zusätzliche Zeitzonen direkt unter der Uhr, komplett offline (nutzt nur
+  die eingebaute `Intl`-API des Browsers – kein Netzwerk-Request).
+- **"Heute"-Karte** – ein kompaktes Widget unter den Lesezeichen mit drei unabhängig voneinander
+  abschaltbaren Info-Häppchen; verschwindet komplett, wenn alle drei deaktiviert sind:
+  - **Wetter** – aktuelle Temperatur und Tief/Hoch für einen in den Einstellungen eingetragenen Ort,
+    über [Open-Meteo](https://open-meteo.com) (kostenlos, kein API-Key, ohne Tracking). Wird ca.
+    30 Minuten lang gecacht, damit nicht bei jedem neuen Tab erneut angefragt wird.
+  - **Feiertage** – der heutige oder nächste Feiertag für einen in den Einstellungen eingetragenen
+    Ländercode, über [Nager.Date](https://date.nager.at) (kostenlos, kein API-Key). Pro Jahr/Land
+    gecacht.
+  - **Zitat des Tages** – wechselt einmal täglich durch eine mit der Erweiterung gebündelte Liste
+    (`src/quotes-data.js`) – bewusst offline statt über eine Live-API, damit es nie von der
+    Verfügbarkeit eines Drittanbieters abhängt und keinen Netzwerk-Request kostet.
 - **Aussehen** – Akzentfarbe einstellen und optional ein Hintergrundbild hochladen. Ohne Bild wird
   nur die Hintergrundfarbe verwendet.
 - **KI-Schnellzugriff** – ein kleiner Knopf neben der Suchleiste öffnet einen neuen Chat mit dem
@@ -73,6 +87,10 @@ Zahnrad-Symbol (oben rechts) öffnet die **Einstellungen**:
 | Akzentfarbe | Die Hervorhebungsfarbe des Dashboards (Buttons, Fokus-Zustände, aktive Umschalter). |
 | Hintergrundbild | Bild hochladen, das als Seitenhintergrund dient; "Entfernen" setzt wieder auf reine Farbe zurück. Wird lokal im Browser gespeichert, nirgendwo hochgeladen. |
 | Kalender-Einbettung | Hier einen `<iframe>`-Embed-Schnipsel einfügen, um einen Kalender anzuzeigen; leer lassen, um das Kalender-Widget komplett auszublenden. |
+| Ort | Ortsname für das Wetter-Widget; leer lassen, um es auszublenden. |
+| Länder-Code | Zweistelliger Ländercode für Feiertage (z. B. `DE`); leer lassen, um die Zeile auszublenden. |
+| Zitat des Tages anzeigen | Schaltet die Zitat-Zeile um. |
+| Weltuhr 1 / 2 | Bis zu zwei zusätzliche Zeitzonen unter der Uhr auswählen; "— Keine —" blendet den Slot aus. |
 | Radio-Player anzeigen | Schaltet den schwebenden Radio-Button/das Panel um. |
 | TuneIn Sender-ID | Die Sender-ID aus der URL eines TuneIn-Senders, z. B. `s34682` aus `tunein.com/radio/.../s34682`. |
 | Meeting Quick-Join anzeigen | Schaltet Meeting-Button, -Modal und die Beitreten-Karte um. |
@@ -108,8 +126,10 @@ Start-/Endzeit sowie entweder ein Wochentag (wöchentlich wiederkehrend) oder ei
 Sämtliche Konfiguration und Daten (Einstellungen, Meetings, Hintergrundbild) bleiben im
 `chrome.storage` des eigenen Browsers – nichts wird an einen Server dieses Projekts gesendet. Die
 einzigen ausgehenden Anfragen sind die, die man von den Features ohnehin erwartet: die gewählte
-Suchmaschine bei einer Suche, die selbst konfigurierten Kalender-/Radio-iframes sowie
-Favicon-Abfragen gegen den lokalen Cache von Chromium.
+Suchmaschine bei einer Suche, die selbst konfigurierten Kalender-/Radio-iframes, Favicon-Abfragen
+gegen den lokalen Cache von Chromium sowie – nur wenn ein Ort/Ländercode in den Einstellungen
+gesetzt ist – Wetter-Abfragen gegen Open-Meteo und Feiertags-Abfragen gegen Nager.Date. Das Zitat
+des Tages ist mit der Erweiterung gebündelt und verursacht nie einen Netzwerk-Request.
 
 ## Entwicklung
 
@@ -127,6 +147,9 @@ Reines HTML/CSS/JS, kein Build-Schritt:
   gemeinsam genutzt vom Hintergrund-Service-Worker und beiden Seiten.
 - `src/background.js` – Hintergrund-Service-Worker; alleinige Quelle der Wahrheit für den
   Pomodoro-Timer über `chrome.alarms`, läuft dadurch unabhängig von offenen Seiten weiter.
+- `src/extras.js` – Wetter, Feiertage, Zitat des Tages und Weltuhr: je eine eigene
+  `loadX(settings)`-Einstiegsfunktion nach demselben Muster wie `loadRadio()`/`loadCalendar()`.
+- `src/quotes-data.js` – die gebündelte Zitat-des-Tages-Liste (reine Daten, keine Logik).
 - `manifest.json` – Extension-Manifest (Manifest V3).
 
 Um einen UI-Text zu ergänzen: einen Key sowohl unter `de` als auch `en` in `src/i18n.js`

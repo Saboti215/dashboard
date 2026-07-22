@@ -9,6 +9,8 @@
         <script src="./src/i18n.js"></script>
         <script src="./src/pomodoro-logic.js"></script>
         <script src="./src/pomodoro-ui.js"></script>
+        <script src="./src/quotes-data.js"></script>
+        <script src="./src/extras.js"></script>
         <script src="./src/dashboard.js"></script>
         <link rel="stylesheet" href="src/dashboard.css">
         <title>Dashboard</title>
@@ -43,6 +45,12 @@
                             <div id="clock-date">...</div>
                             <!-- Shown only once a name is set in Settings -->
                             <div id="greeting"></div>
+                            <!-- Extra timezones, configured in Settings -> World clock; hidden via
+                                 feature-hidden when a slot isn't set to a zone. -->
+                            <div class="world-clock">
+                                <div id="world-clock-1" class="feature-hidden"></div>
+                                <div id="world-clock-2" class="feature-hidden"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -73,6 +81,43 @@
                         <span data-i18n="widgets.bookmarks">Lesezeichen</span>
                     </div>
                     <div class="content" id="apps-wrapper">
+                    </div>
+                </div>
+
+                <!-- "Today" card: weather, public holiday, quote of the day. Each row is toggled
+                     independently in Settings; the whole card hides itself (src/extras.js) when
+                     none of the three are configured/enabled. -->
+                <div class="container" id="today-container">
+                    <div class="head">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="head-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2zM8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h.01" />
+                        </svg>
+                        <span data-i18n="widgets.today">Heute</span>
+                    </div>
+                    <div class="content" id="today-wrapper">
+                        <div class="today-row" id="weather-widget">
+                            <span id="weather-icon" class="today-icon"></span>
+                            <span id="weather-text"></span>
+                        </div>
+                        <div class="today-row" id="holiday-widget">
+                            <span class="today-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </span>
+                            <span id="holiday-text"></span>
+                        </div>
+                        <div class="today-row" id="quote-widget">
+                            <span class="today-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-9 8l2.5-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-6.5L11 20z" />
+                                </svg>
+                            </span>
+                            <div>
+                                <div id="quote-text"></div>
+                                <div id="quote-author"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -325,6 +370,96 @@
                                 </button>
                             </label>
                             <textarea id="settings-calendar-iframe" rows="3" placeholder="<iframe src=&quot;https://calendar.google.com/...&quot; ...></iframe>"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.weather">Wetter</h3>
+
+                        <div class="form-row">
+                            <label for="settings-weather-location">
+                                <span data-i18n="settings.weatherLocation">Ort</span>
+                                <button type="button" class="info-icon" tabindex="-1" data-i18n-title="settings.weatherHint" title='Ortsname, z. B. "Berlin" oder "Neuss". Wetterdaten kommen von Open-Meteo (kostenlos, ohne Anmeldung, ohne Tracking).'>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
+                            </label>
+                            <input type="text" id="settings-weather-location" placeholder="Berlin" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.holidays">Feiertage</h3>
+
+                        <div class="form-row">
+                            <label for="settings-holiday-country">
+                                <span data-i18n="settings.holidayCountry">Länder-Code</span>
+                                <button type="button" class="info-icon" tabindex="-1" data-i18n-title="settings.holidayHint" title='Zweistelliger Ländercode, z. B. "DE" für Deutschland, "AT" für Österreich, "CH" für die Schweiz, "US" für die USA.'>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
+                            </label>
+                            <input type="text" id="settings-holiday-country" placeholder="DE" maxlength="2" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.quote">Zitat des Tages</h3>
+
+                        <div class="form-row form-row-checkbox">
+                            <input type="checkbox" id="settings-quote-enabled">
+                            <label for="settings-quote-enabled" data-i18n="settings.quoteEnabled">Zitat des Tages anzeigen</label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.worldClock">Weltuhr</h3>
+
+                        <div class="form-row form-row-split">
+                            <div>
+                                <label for="settings-world-clock-1" data-i18n="settings.worldClock1">Weltuhr 1</label>
+                                <select id="settings-world-clock-1">
+                                    <option value="" data-i18n="settings.worldClockNone">— Keine —</option>
+                                    <option value="los_angeles">Los Angeles</option>
+                                    <option value="new_york">New York</option>
+                                    <option value="sao_paulo">São Paulo</option>
+                                    <option value="london">London</option>
+                                    <option value="berlin">Berlin</option>
+                                    <option value="paris">Paris</option>
+                                    <option value="moscow">Moscow</option>
+                                    <option value="cairo">Cairo</option>
+                                    <option value="dubai">Dubai</option>
+                                    <option value="mumbai">Mumbai</option>
+                                    <option value="bangkok">Bangkok</option>
+                                    <option value="singapore">Singapore</option>
+                                    <option value="tokyo">Tokyo</option>
+                                    <option value="sydney">Sydney</option>
+                                    <option value="auckland">Auckland</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="settings-world-clock-2" data-i18n="settings.worldClock2">Weltuhr 2</label>
+                                <select id="settings-world-clock-2">
+                                    <option value="" data-i18n="settings.worldClockNone">— Keine —</option>
+                                    <option value="los_angeles">Los Angeles</option>
+                                    <option value="new_york">New York</option>
+                                    <option value="sao_paulo">São Paulo</option>
+                                    <option value="london">London</option>
+                                    <option value="berlin">Berlin</option>
+                                    <option value="paris">Paris</option>
+                                    <option value="moscow">Moscow</option>
+                                    <option value="cairo">Cairo</option>
+                                    <option value="dubai">Dubai</option>
+                                    <option value="mumbai">Mumbai</option>
+                                    <option value="bangkok">Bangkok</option>
+                                    <option value="singapore">Singapore</option>
+                                    <option value="tokyo">Tokyo</option>
+                                    <option value="sydney">Sydney</option>
+                                    <option value="auckland">Auckland</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
