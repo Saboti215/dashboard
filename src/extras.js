@@ -115,6 +115,91 @@ async function fetchHolidays(year, country) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// RSS/Atom news ticker — fetched directly from the user's configured feed URLs (host_permissions
+// in manifest.json grants cross-origin fetch() access; most feeds don't send CORS headers, so
+// this couldn't work as a plain in-page fetch otherwise) and parsed client-side with DOMParser.
+// No third-party proxy involved, matching this extension's "no tracking, nothing routed through
+// someone else's server" stance for weather/holidays above.
+// ---------------------------------------------------------------------------------------------
+
+const RSS_CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const RSS_MAX_ITEMS = 15;
+
+function getRssCache(cb) {
+    if (typeof chrome === "undefined" || !chrome.storage) { cb(null); return; }
+    chrome.storage.local.get({ rssCache: null }, data => cb(data.rssCache));
+}
+
+function saveRssCache(data) {
+    if (typeof chrome === "undefined" || !chrome.storage) return;
+    chrome.storage.local.set({ rssCache: data });
+}
+
+function textOf(root, selector) {
+    const el = root.querySelector(selector);
+    return el ? (el.textContent || "").trim() : "";
+}
+
+// Reads an <item> (RSS 2.0) or <entry> (Atom) element into a plain {title, link, date} object.
+// The two formats disagree on almost every tag name, hence the per-format branching below.
+function parseFeedEntry(entry) {
+    const isAtom = entry.tagName.toLowerCase() === "entry";
+
+    const title = textOf(entry, "title");
+
+    let link = "";
+    if (isAtom) {
+        const links = Array.from(entry.querySelectorAll("link"));
+        const preferred = links.find(l => l.getAttribute("rel") === "alternate") || links[0];
+        link = preferred ? preferred.getAttribute("href") || "" : "";
+    } else {
+        link = textOf(entry, "link");
+    }
+
+    const dateText = isAtom ? textOf(entry, "updated, published") : textOf(entry, "pubDate");
+    const date = dateText ? new Date(dateText) : null;
+
+    if (!title || !link) return null;
+    return { title, link, date: date && !Number.isNaN(date.getTime()) ? date.getTime() : 0 };
+}
+
+async function fetchOneRssFeed(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Feed request failed: ${url}`);
+
+    const text = await res.text();
+    const doc = new DOMParser().parseFromString(text, "application/xml");
+    if (doc.querySelector("parsererror")) throw new Error(`Feed did not parse as XML: ${url}`);
+
+    const sourceName = textOf(doc, "channel > title, feed > title") || new URL(url).hostname;
+    const entries = Array.from(doc.querySelectorAll("item, entry"));
+
+    return entries
+        .map(parseFeedEntry)
+        .filter(Boolean)
+        .map(item => ({ ...item, source: sourceName }));
+}
+
+// Fetches every configured feed in parallel; a feed that fails to load or parse (dead URL,
+// non-XML response, ...) is simply dropped instead of failing the whole batch, so one bad feed
+// never blanks out the others.
+async function fetchRssFeeds(urls) {
+    const results = await Promise.allSettled(urls.map(fetchOneRssFeed));
+
+    const items = results
+        .filter(r => r.status === "fulfilled")
+        .flatMap(r => r.value)
+        .sort((a, b) => b.date - a.date)
+        .slice(0, RSS_MAX_ITEMS);
+
+    if (items.length === 0 && results.every(r => r.status === "rejected")) {
+        throw new Error("All feeds failed to load");
+    }
+
+    return { query: urls.join("\n"), items, fetchedAt: Date.now() };
+}
+
+// ---------------------------------------------------------------------------------------------
 // World clock zone table — fully offline (Intl.DateTimeFormat); the actual rendering lives in
 // src/stores.js's refreshWorldClockSlot(), driven by the 1-second clock tick.
 // ---------------------------------------------------------------------------------------------

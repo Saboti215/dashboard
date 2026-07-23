@@ -65,21 +65,129 @@ function broadcastBeep() {
     chrome.runtime.sendMessage({ type: "pomodoro:beep" }).catch(() => {});
 }
 
+// ---------------------------------------------------------------------------------------------
+// Wellness pings (water / eyes / standing desk) — independent, periodic chrome.alarms, each
+// firing its own native notification. Modeled directly on the Pomodoro timer above: alarms
+// survive closed tabs and browser restarts, so the reminders keep coming whether or not the
+// dashboard tab is open. Unlike Pomodoro there's no running/paused state to persist — each type
+// is just "on + an interval", so an alarm existing *is* the state.
+// ---------------------------------------------------------------------------------------------
+
+const WELLNESS_TYPES = {
+    water: { alarmName: "wellness-water", enabledKey: "waterEnabled", intervalKey: "waterIntervalMinutes" },
+    eyes: { alarmName: "wellness-eyes", enabledKey: "eyesEnabled", intervalKey: "eyesIntervalMinutes" },
+    desk: { alarmName: "wellness-desk", enabledKey: "deskEnabled", intervalKey: "deskIntervalMinutes" }
+};
+
+const WELLNESS_SETTINGS_DEFAULTS = {
+    language: detectDefaultLanguage(),
+    waterEnabled: false,
+    waterIntervalMinutes: 60,
+    eyesEnabled: false,
+    eyesIntervalMinutes: 20,
+    deskEnabled: false,
+    deskIntervalMinutes: 50
+};
+
+async function getWellnessSettings() {
+    return chrome.storage.sync.get(WELLNESS_SETTINGS_DEFAULTS);
+}
+
+function getWellnessTypeByAlarmName(alarmName) {
+    return Object.keys(WELLNESS_TYPES).find(type => WELLNESS_TYPES[type].alarmName === alarmName) || null;
+}
+
+// Reconciles all three wellness alarms with the latest settings: clears each one first (so a
+// disabled/removed reminder actually stops), then recreates it if it's enabled with a valid
+// interval. Safe to call as often as needed — chrome.alarms.create() replaces any alarm with the
+// same name, so this never double-schedules.
+async function syncWellnessAlarms() {
+    const settings = await getWellnessSettings();
+
+    for (const type of Object.keys(WELLNESS_TYPES)) {
+        const { alarmName, enabledKey, intervalKey } = WELLNESS_TYPES[type];
+        await chrome.alarms.clear(alarmName);
+
+        const interval = Math.max(1, Number(settings[intervalKey]) || 0);
+        if (settings[enabledKey] && interval >= 1) {
+            chrome.alarms.create(alarmName, { periodInMinutes: interval, delayInMinutes: interval });
+        }
+    }
+}
+
+// The standing-desk reminder alternates sit/stand on every fire rather than always saying the
+// same thing; which one comes next is the only piece of state this feature needs, kept in
+// storage.local so it survives service-worker restarts between alarms.
+async function getDeskStandNext() {
+    const data = await chrome.storage.local.get({ deskStandNext: true });
+    return data.deskStandNext;
+}
+
+async function notifyWellness(type, settings) {
+    setLanguage(settings.language);
+
+    if (type === "desk") {
+        const standNext = await getDeskStandNext();
+        await chrome.storage.local.set({ deskStandNext: !standNext });
+
+        chrome.notifications.create(`wellness-desk-${Date.now()}`, {
+            type: "basic",
+            iconUrl: chrome.runtime.getURL("assets/dashboard.svg"),
+            title: t(standNext ? "wellness.desk.stand.title" : "wellness.desk.sit.title"),
+            message: t(standNext ? "wellness.desk.stand.body" : "wellness.desk.sit.body"),
+            priority: 1
+        });
+        return;
+    }
+
+    chrome.notifications.create(`wellness-${type}-${Date.now()}`, {
+        type: "basic",
+        iconUrl: chrome.runtime.getURL("assets/dashboard.svg"),
+        title: t(`wellness.${type}.title`),
+        message: t(`wellness.${type}.body`),
+        priority: 1
+    });
+}
+
+// Establish the wellness alarms as soon as the service worker has a reason to run: right after
+// install (first-ever settings are the defaults, all disabled, so this is a no-op until the user
+// opts in) and on every browser startup (alarms don't persist across a full browser restart on
+// all platforms, so this re-arms them). Settings changes while already running are covered by the
+// chrome.storage.onChanged listener further down.
+chrome.runtime.onInstalled.addListener(() => { syncWellnessAlarms(); });
+chrome.runtime.onStartup.addListener(() => { syncWellnessAlarms(); });
+
+const WELLNESS_SETTING_KEYS = Object.values(WELLNESS_TYPES).flatMap(({ enabledKey, intervalKey }) => [enabledKey, intervalKey]);
+
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "sync" && WELLNESS_SETTING_KEYS.some(key => changes[key])) {
+        syncWellnessAlarms();
+    }
+});
+
 // A phase's timer ran out on its own — advance to the next phase, persist it, reschedule (or not)
-// and let the user know.
+// and let the user know. Also handles wellness alarms, which need no phase machinery: firing the
+// alarm and showing its notification is the entire "state transition".
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-    if (alarm.name !== POMODORO_ALARM_NAME) return;
+    if (alarm.name === POMODORO_ALARM_NAME) {
+        const settings = await getPomodoroSettings();
+        const state = await getPomodoroState(settings);
+        const finishedPhase = state.phase;
 
-    const settings = await getPomodoroSettings();
-    const state = await getPomodoroState(settings);
-    const finishedPhase = state.phase;
+        const nextState = advancePomodoroPhase(state, settings);
+        await savePomodoroState(nextState);
+        await syncAlarmWithState(nextState);
 
-    const nextState = advancePomodoroPhase(state, settings);
-    await savePomodoroState(nextState);
-    await syncAlarmWithState(nextState);
+        notifyPhaseEnd(finishedPhase, settings);
+        broadcastBeep();
+        return;
+    }
 
-    notifyPhaseEnd(finishedPhase, settings);
-    broadcastBeep();
+    const wellnessType = getWellnessTypeByAlarmName(alarm.name);
+    if (wellnessType) {
+        const settings = await getWellnessSettings();
+        await notifyWellness(wellnessType, settings);
+    }
 });
 
 // Action messages from any open UI surface (dashboard panel or the popup window).

@@ -8,6 +8,7 @@
         <script src="./src/pomodoro-logic.js"></script>
         <script src="./src/quotes-data.js"></script>
         <script src="./src/extras.js"></script>
+        <script src="./src/calc.js"></script>
         <script src="./src/stores.js"></script>
         <script src="./src/pomodoro-ui.js"></script>
         <script src="./src/dashboard.js"></script>
@@ -24,60 +25,105 @@
              registered its alpine:init listener. -->
         <script defer src="./src/alpine-csp.min.js"></script>
     </head>
-    <body x-data="dashboardRoot" x-cloak x-on:keydown.escape.window="closeAllModals">
+    <body x-data="dashboardRoot" x-cloak x-on:keydown.escape.window="onEscape">
         <!-- Background Overlay for modern aesthetic -->
         <div id="bg-overlay"></div>
 
         <div id="dashboard" x-bind:class="$store.dashboard.dashboardGridClass">
-            <!-- Left Side: Calendar. Hidden by loadCalendar() until a calendar embed is configured
-                 in Settings. -->
-            <div class="container" id="calendar-container" x-bind:class="$store.dashboard.calendarContainerClass">
-                <a href="https://calendar.google.com/calendar/b/0/r" target="_blank" class="container-header-link">
+            <!-- Left Column: Calendar (capped height, not full-column anymore) + News below it. -->
+            <div class="left-column">
+                <!-- Calendar. Hidden by loadCalendar() until a calendar embed is configured in
+                     Settings. -->
+                <div class="container" id="calendar-container" x-bind:class="$store.dashboard.calendarContainerClass">
+                    <a href="https://calendar.google.com/calendar/b/0/r" target="_blank" class="container-header-link">
+                        <div class="head">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="head-icon">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span data-i18n="widgets.calendar">Kalender</span>
+                        </div>
+                    </a>
+                    <div class="content" id="calendar-wrapper" x-html="$store.dashboard.calendarHtml">
+                    </div>
+                </div>
+
+                <!-- News card: latest headlines from the RSS/Atom feeds configured in Settings.
+                     Fetched lazily (src/stores.js's loadRss(), called from applyEverything()) so
+                     it never blocks the rest of the dashboard from rendering; hides itself entirely
+                     when no feeds are configured or the feature is disabled. -->
+                <div class="container" id="news-container" x-bind:class="$store.dashboard.rssContainerClass">
                     <div class="head">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="head-icon">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h11a2 2 0 012 2v1m-6 9h6m-6-4h6m-6-4h2M5 8h1m10 12a2 2 0 002-2v-9a2 2 0 00-2-2H7a2 2 0 00-2 2v9a2 2 0 002 2z" />
                         </svg>
-                        <span data-i18n="widgets.calendar">Kalender</span>
+                        <span data-i18n="widgets.news">News</span>
                     </div>
-                </a>
-                <div class="content" id="calendar-wrapper" x-html="$store.dashboard.calendarHtml">
+                    <div class="content" id="news-wrapper">
+                        <div class="news-empty" x-show="$store.dashboard.rssErrorText" x-text="$store.dashboard.rssErrorText"></div>
+                        <!-- Keyed by array index rather than item.link: some feeds legitimately list
+                             the same article URL more than once (e.g. a text and a video teaser both
+                             pointing at the same page), and Alpine's x-for reorder-diffing crashes on
+                             duplicate keys. rssItems is always replaced wholesale (never patched), so
+                             the index is a safe, always-unique key here. -->
+                        <template x-for="(item, index) in $store.dashboard.rssItems" x-bind:key="index">
+                            <a class="news-item" x-bind:href="item.link" target="_blank" rel="noopener">
+                                <span class="news-item-title" x-text="item.title"></span>
+                                <span class="news-item-source" x-text="item.source"></span>
+                            </a>
+                        </template>
+                    </div>
                 </div>
             </div>
 
-            <!-- Right Side Stack: Clock, Search, Bookmarks -->
+            <!-- Right Column: Hero (Clock + Search), Bookmarks, Today -->
             <div class="right-column">
-                <!-- Clock Widget -->
-                <div class="container clock-container">
-                    <div class="content" id="clock-wrapper">
-                        <div id="clock">
-                            <div id="clock-time" x-text="$store.dashboard.clock.time">--:--:--</div>
-                            <div id="clock-date" x-text="$store.dashboard.clock.date">...</div>
-                            <!-- Shown only once a name is set in Settings -->
-                            <div id="greeting" x-show="$store.dashboard.hasGreeting" x-text="$store.dashboard.greetingText"></div>
-                            <!-- Extra timezones, configured in Settings -> World clock; hidden via
-                                 feature-hidden when a slot isn't set to a zone. -->
-                            <div class="world-clock">
-                                <div id="world-clock-1" class="feature-hidden" x-bind:class="$store.dashboard.worldClock1Class" x-text="$store.dashboard.worldClock1Text"></div>
-                                <div id="world-clock-2" class="feature-hidden" x-bind:class="$store.dashboard.worldClock2Class" x-text="$store.dashboard.worldClock2Text"></div>
+                <!-- Hero: Clock + Search grouped so they can be centered together (no-calendar
+                     full-width layout, Zen mode). -->
+                <div class="hero">
+                    <!-- Clock Widget -->
+                    <div class="container clock-container">
+                        <div class="content" id="clock-wrapper">
+                            <div id="clock">
+                                <div id="clock-time" x-text="$store.dashboard.clock.time">--:--:--</div>
+                                <div id="clock-date" x-text="$store.dashboard.clock.date">...</div>
+                                <!-- Shown only once a name is set in Settings -->
+                                <div id="greeting" x-show="$store.dashboard.hasGreeting" x-text="$store.dashboard.greetingText"></div>
+                                <!-- Extra timezones, configured in Settings -> World clock; hidden via
+                                     feature-hidden when a slot isn't set to a zone. -->
+                                <div class="world-clock">
+                                    <div id="world-clock-1" class="feature-hidden" x-bind:class="$store.dashboard.worldClock1Class" x-text="$store.dashboard.worldClock1Text"></div>
+                                    <div id="world-clock-2" class="feature-hidden" x-bind:class="$store.dashboard.worldClock2Class" x-text="$store.dashboard.worldClock2Text"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Search Widget: engine is configurable in Settings -->
-                <div class="container" id="search-container">
-                    <div class="content" id="search-wrapper">
-                        <form id="search-form" action="https://search.brave.com/search" method="get" x-bind:action="$store.dashboard.searchAction">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="search-icon">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
-                            </svg>
-                            <input type="search" name="q" id="search-input" autofocus autocomplete="off" x-ref="searchInput" x-bind:name="$store.dashboard.searchParam" x-bind:placeholder="$store.dashboard.searchPlaceholder">
-                        </form>
-                        <a id="ai-btn" href="https://gemini.google.com/app" data-i18n-title="ai.title" title="Neuer KI-Chat" x-bind:href="$store.dashboard.aiHref">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l1.912 5.813L20 10.5l-6.088 1.687L12 18l-1.912-5.813L4 10.5l6.088-1.687L12 3z" />
-                            </svg>
-                        </a>
+                    <!-- Search Widget: engine is configurable in Settings -->
+                    <div class="container" id="search-container">
+                        <div class="content" id="search-wrapper">
+                            <form id="search-form" action="https://search.brave.com/search" method="get" x-bind:action="$store.dashboard.searchAction" x-on:submit="onSearchSubmit">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="search-icon">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+                                </svg>
+                                <input type="search" name="q" id="search-input" autofocus autocomplete="off" x-ref="searchInput" x-bind:name="$store.dashboard.searchParam" x-bind:placeholder="$store.dashboard.searchPlaceholder" x-on:input="onSearchInput" x-on:keydown.down.prevent="highlightNextBookmarkMatch" x-on:keydown.up.prevent="highlightPrevBookmarkMatch">
+                            </form>
+                            <!-- Spotlight search: shows the live result of an offline math expression
+                                 (src/calc.js) typed into the search bar above; hidden otherwise. -->
+                            <div id="search-math-result" x-bind:class="mathResultVisibleClass" x-text="mathResultText"></div>
+                            <!-- Spotlight bookmark search: up to 5 bookmarks whose name matches the query,
+                                 navigable with Up/Down + Enter (see onSearchSubmit) or a plain click.
+                                 Suppressed while a math expression is showing (see bookmarkMatches). -->
+                            <div id="search-bookmark-suggestions" x-show="hasBookmarkMatches">
+                                <template x-for="(match, index) in bookmarkMatches" x-bind:key="index">
+                                    <a class="search-suggestion-row" x-bind:href="match.href" x-bind:class="match.rowClass" x-text="match.name"></a>
+                                </template>
+                            </div>
+                            <a id="ai-btn" href="https://gemini.google.com/app" data-i18n-title="ai.title" title="Neuer KI-Chat" x-bind:href="$store.dashboard.aiHref">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l1.912 5.813L20 10.5l-6.088 1.687L12 18l-1.912-5.813L4 10.5l6.088-1.687L12 3z" />
+                                </svg>
+                            </a>
+                        </div>
                     </div>
                 </div>
 
@@ -230,6 +276,17 @@
         <button id="settings-toggle" data-i18n-title="settings.toggleTitle" title="Einstellungen" x-on:click="openSettings">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        </button>
+
+        <!-- Zen mode: hides every secondary widget/button, leaving only the background, clock, and
+             search bar. Also toggled via Escape (see the body's x-on:keydown.escape.window above);
+             this button stays visible even in zen mode (see .zen-mode CSS) so there's always a way
+             back without touching the keyboard. -->
+        <button id="zen-toggle" data-i18n-title="zen.toggleTitle" title="Zen-Modus" x-bind:class="$store.dashboard.zenToggleClass" x-on:click="toggleZenMode">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
         </button>
@@ -470,6 +527,29 @@
                     </div>
 
                     <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.rss">News</h3>
+
+                        <div class="form-row form-row-checkbox">
+                            <input type="checkbox" id="settings-rss-enabled" data-field="rssEnabled" x-bind:checked="settingsForm.rssEnabled" x-on:change="updateSettingsField">
+                            <label for="settings-rss-enabled" data-i18n="settings.rssEnabled">News-Karte anzeigen</label>
+                        </div>
+
+                        <div class="settings-subfields" id="settings-rss-details" x-show="settingsForm.rssEnabled">
+                            <div class="form-row">
+                                <label for="settings-rss-feeds">
+                                    <span data-i18n="settings.rssFeeds">RSS-Feeds</span>
+                                    <button type="button" class="info-icon" tabindex="-1" data-i18n-title="settings.rssHint" title="Eine Feed-URL pro Zeile.">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </button>
+                                </label>
+                                <textarea id="settings-rss-feeds" rows="3" placeholder="https://www.tagesschau.de/xml/rss2/" data-field="rssFeeds" x-bind:value="settingsForm.rssFeeds" x-on:input="updateSettingsField"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
                         <h3 class="settings-section-title" data-i18n="settings.section.worldClock">Weltuhr</h3>
 
                         <div class="form-row form-row-split">
@@ -579,6 +659,43 @@
                                     <label for="settings-pomodoro-rounds" data-i18n="settings.pomodoroRounds">Runden bis lange Pause</label>
                                     <input type="number" id="settings-pomodoro-rounds" min="1" max="12" data-field="pomodoroRoundsUntilLongBreak" x-bind:value="settingsForm.pomodoroRoundsUntilLongBreak" x-on:input="updateSettingsField">
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.wellness">Wellness</h3>
+
+                        <div class="form-row form-row-checkbox">
+                            <input type="checkbox" id="settings-water-enabled" data-field="waterEnabled" x-bind:checked="settingsForm.waterEnabled" x-on:change="updateSettingsField">
+                            <label for="settings-water-enabled" data-i18n="settings.waterEnabled">Wasser-Erinnerung</label>
+                        </div>
+                        <div class="settings-subfields" id="settings-water-details" x-show="settingsForm.waterEnabled">
+                            <div class="form-row">
+                                <label for="settings-water-interval" data-i18n="settings.wellnessInterval">Intervall (Min.)</label>
+                                <input type="number" id="settings-water-interval" min="1" max="480" data-field="waterIntervalMinutes" x-bind:value="settingsForm.waterIntervalMinutes" x-on:input="updateSettingsField">
+                            </div>
+                        </div>
+
+                        <div class="form-row form-row-checkbox">
+                            <input type="checkbox" id="settings-eyes-enabled" data-field="eyesEnabled" x-bind:checked="settingsForm.eyesEnabled" x-on:change="updateSettingsField">
+                            <label for="settings-eyes-enabled" data-i18n="settings.eyesEnabled">Augen-Pause</label>
+                        </div>
+                        <div class="settings-subfields" id="settings-eyes-details" x-show="settingsForm.eyesEnabled">
+                            <div class="form-row">
+                                <label for="settings-eyes-interval" data-i18n="settings.wellnessInterval">Intervall (Min.)</label>
+                                <input type="number" id="settings-eyes-interval" min="1" max="480" data-field="eyesIntervalMinutes" x-bind:value="settingsForm.eyesIntervalMinutes" x-on:input="updateSettingsField">
+                            </div>
+                        </div>
+
+                        <div class="form-row form-row-checkbox">
+                            <input type="checkbox" id="settings-desk-enabled" data-field="deskEnabled" x-bind:checked="settingsForm.deskEnabled" x-on:change="updateSettingsField">
+                            <label for="settings-desk-enabled" data-i18n="settings.deskEnabled">Steh-Erinnerung</label>
+                        </div>
+                        <div class="settings-subfields" id="settings-desk-details" x-show="settingsForm.deskEnabled">
+                            <div class="form-row">
+                                <label for="settings-desk-interval" data-i18n="settings.wellnessInterval">Intervall (Min.)</label>
+                                <input type="number" id="settings-desk-interval" min="1" max="480" data-field="deskIntervalMinutes" x-bind:value="settingsForm.deskIntervalMinutes" x-on:input="updateSettingsField">
                             </div>
                         </div>
                     </div>

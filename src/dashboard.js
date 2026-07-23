@@ -30,6 +30,15 @@ document.addEventListener("alpine:init", () => {
         settingsForm: {},
         meetingForm: defaultMeetingForm(),
 
+        // Spotlight math result: null while the search bar doesn't hold a valid arithmetic
+        // expression, a finite number once it does (see src/calc.js's evaluateMathExpression()).
+        mathResult: null,
+
+        // Spotlight bookmark search: the raw query (mirrors #search-input's value) plus which
+        // suggestion row is currently keyboard-highlighted.
+        searchQuery: "",
+        highlightedIndex: 0,
+
         // Background image upload state, held only while the Settings modal is open:
         //   undefined -> untouched (don't touch storage on save)
         //   null      -> user clicked "Remove" (delete the stored image on save)
@@ -76,9 +85,11 @@ document.addEventListener("alpine:init", () => {
             store.applyLanguage(settings.language);
             store.applyAccentColor(settings.accentColor);
             store.applyBackground();
+            store.applyZenMode();
             store.loadWeather();
             store.loadHolidays();
             store.loadQuote();
+            store.loadRss();
             store.refreshGreeting(); // immediate effect, not just on the next 1s clock tick
             store.refreshWorldClock();
             store.loadMeetings(() => store.updateActiveMeeting());
@@ -101,6 +112,80 @@ document.addEventListener("alpine:init", () => {
         },
 
         // -----------------------------------------------------------------------------------
+        // Spotlight search: an offline calculator + bookmark quick-open layered on top of the
+        // existing search bar. The <form> itself is still a plain native GET form (see
+        // index.html) — these handlers only intercept input to show a live result/suggestions,
+        // and conditionally stop the submit when the query is a math expression or has a
+        // bookmark match, rather than falling through to a real web search.
+        // -----------------------------------------------------------------------------------
+        onSearchInput(event) {
+            this.searchQuery = event.target.value;
+            this.mathResult = evaluateMathExpression(this.searchQuery);
+            this.highlightedIndex = 0; // every keystroke reshuffles the match list — re-anchor to the top
+        },
+
+        onSearchSubmit(event) {
+            if (this.mathResult !== null) {
+                event.preventDefault();
+                copyToClipboard(String(this.mathResult));
+                return;
+            }
+
+            const matches = this.bookmarkMatches;
+            if (matches.length > 0) {
+                event.preventDefault();
+                const target = matches[this.highlightedIndex] || matches[0];
+                window.location.href = target.href;
+                return;
+            }
+
+            // Neither a math expression nor a bookmark match -> let the native GET search run.
+        },
+
+        get mathResultText() {
+            return this.mathResult !== null ? `= ${this.mathResult}` : "";
+        },
+
+        get mathResultVisibleClass() {
+            return { visible: this.mathResult !== null };
+        },
+
+        // Bookmarks whose name contains the current query (case-insensitive), capped at 5 rows.
+        // Suppressed entirely while a math expression is active, so the two overlays never fight
+        // for the same spot below the search bar. Each match carries its own precomputed
+        // "rowClass" object rather than the template comparing index === highlightedIndex inline
+        // — the CSP build's safe evaluator only accepts bare dotted-path expressions in
+        // directives, same reasoning as the *Class getters in src/stores.js.
+        get bookmarkMatches() {
+            if (this.mathResult !== null) return [];
+
+            const query = this.searchQuery.trim().toLowerCase();
+            if (!query) return [];
+
+            const allBookmarks = this.$store.dashboard.bookmarkCategories.flatMap(cat => cat.links);
+            const matches = allBookmarks.filter(link => link.name.toLowerCase().includes(query)).slice(0, 5);
+
+            return matches.map((link, index) => ({
+                ...link,
+                rowClass: { highlighted: index === this.highlightedIndex }
+            }));
+        },
+
+        get hasBookmarkMatches() {
+            return this.bookmarkMatches.length > 0;
+        },
+
+        highlightNextBookmarkMatch() {
+            if (!this.hasBookmarkMatches) return;
+            this.highlightedIndex = Math.min(this.highlightedIndex + 1, this.bookmarkMatches.length - 1);
+        },
+
+        highlightPrevBookmarkMatch() {
+            if (!this.hasBookmarkMatches) return;
+            this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0);
+        },
+
+        // -----------------------------------------------------------------------------------
         // Thin wrappers around Alpine.store('dashboard') methods.
         //
         // The CSP build's safe expression evaluator only auto-invokes a directive expression
@@ -113,6 +198,26 @@ document.addEventListener("alpine:init", () => {
         // -----------------------------------------------------------------------------------
         closeAllModals() {
             this.$store.dashboard.closeAllModals();
+        },
+
+        toggleZenMode() {
+            this.$store.dashboard.toggleZenMode();
+        },
+
+        // Bound to the global Escape key (see index.html's x-on:keydown.escape.window). Modals take
+        // priority over zen mode, and typing Escape while the search bar has focus (e.g. to clear a
+        // native "x" affordance) shouldn't unexpectedly toggle zen mode out from under the user.
+        onEscape() {
+            const store = this.$store.dashboard;
+
+            if (store.ui.settingsModalOpen || store.ui.meetingsModalOpen) {
+                store.closeAllModals();
+                return;
+            }
+
+            if (document.activeElement === this.$refs.searchInput) return;
+
+            store.toggleZenMode();
         },
 
         toggleRadioPanel() {
@@ -155,6 +260,8 @@ document.addEventListener("alpine:init", () => {
                 weatherLocation: settings.weatherLocation || "",
                 holidayCountry: settings.holidayCountry || "",
                 quoteEnabled: settings.quoteEnabled !== false,
+                rssEnabled: settings.rssEnabled !== false,
+                rssFeeds: settings.rssFeeds || "",
                 worldClock1: WORLD_CLOCK_ZONES[settings.worldClock1] ? settings.worldClock1 : "",
                 worldClock2: WORLD_CLOCK_ZONES[settings.worldClock2] ? settings.worldClock2 : "",
                 radioEnabled: settings.radioEnabled !== false,
@@ -164,7 +271,13 @@ document.addEventListener("alpine:init", () => {
                 pomodoroWorkMinutes: settings.pomodoroWorkMinutes || 25,
                 pomodoroShortBreakMinutes: settings.pomodoroShortBreakMinutes || 5,
                 pomodoroLongBreakMinutes: settings.pomodoroLongBreakMinutes || 15,
-                pomodoroRoundsUntilLongBreak: settings.pomodoroRoundsUntilLongBreak || 4
+                pomodoroRoundsUntilLongBreak: settings.pomodoroRoundsUntilLongBreak || 4,
+                waterEnabled: !!settings.waterEnabled,
+                waterIntervalMinutes: settings.waterIntervalMinutes || 60,
+                eyesEnabled: !!settings.eyesEnabled,
+                eyesIntervalMinutes: settings.eyesIntervalMinutes || 20,
+                deskEnabled: !!settings.deskEnabled,
+                deskIntervalMinutes: settings.deskIntervalMinutes || 50
             };
 
             this.pendingBackgroundImage = undefined;
@@ -217,10 +330,15 @@ document.addEventListener("alpine:init", () => {
                 accentColor: f.accentColor,
                 searchEngine: f.searchEngine,
                 aiAssistant: f.aiAssistant,
+                // Not exposed in the Settings modal — toggled directly via the zen button/Escape —
+                // so it has to be carried over explicitly, or this save would silently reset it.
+                zenMode: store.settings.zenMode,
                 calendarIframe: (f.calendarIframe || "").trim(),
                 weatherLocation: (f.weatherLocation || "").trim(),
                 holidayCountry: (f.holidayCountry || "").trim(),
                 quoteEnabled: !!f.quoteEnabled,
+                rssEnabled: !!f.rssEnabled,
+                rssFeeds: (f.rssFeeds || "").trim(),
                 worldClock1: f.worldClock1,
                 worldClock2: f.worldClock2,
                 tuneInId: (f.tuneInId || "").trim(),
@@ -230,7 +348,13 @@ document.addEventListener("alpine:init", () => {
                 pomodoroWorkMinutes: Number(f.pomodoroWorkMinutes) || 25,
                 pomodoroShortBreakMinutes: Number(f.pomodoroShortBreakMinutes) || 5,
                 pomodoroLongBreakMinutes: Number(f.pomodoroLongBreakMinutes) || 15,
-                pomodoroRoundsUntilLongBreak: Number(f.pomodoroRoundsUntilLongBreak) || 4
+                pomodoroRoundsUntilLongBreak: Number(f.pomodoroRoundsUntilLongBreak) || 4,
+                waterEnabled: !!f.waterEnabled,
+                waterIntervalMinutes: Number(f.waterIntervalMinutes) || 60,
+                eyesEnabled: !!f.eyesEnabled,
+                eyesIntervalMinutes: Number(f.eyesIntervalMinutes) || 20,
+                deskEnabled: !!f.deskEnabled,
+                deskIntervalMinutes: Number(f.deskIntervalMinutes) || 50
             };
 
             // Applies every affected widget immediately, without requiring a page reload.

@@ -18,7 +18,8 @@ const TRANSLATIONS = {
         widgets: {
             calendar: "Kalender",
             bookmarks: "Lesezeichen",
-            today: "Heute"
+            today: "Heute",
+            news: "News"
         },
         bookmarks: {
             general: "Allgemein",
@@ -49,6 +50,10 @@ const TRANSLATIONS = {
                 today: "Heute: {name}",
                 next: "Nächster Feiertag: {name} ({date})",
                 none: "Keine weiteren Feiertage dieses Jahr"
+            },
+            rss: {
+                error: "News nicht verfügbar",
+                empty: "Keine Schlagzeilen gefunden"
             }
         },
         search: {
@@ -56,6 +61,29 @@ const TRANSLATIONS = {
         },
         ai: {
             title: "Neuer KI-Chat"
+        },
+        zen: {
+            toggleTitle: "Zen-Modus"
+        },
+        wellness: {
+            water: {
+                title: "Zeit für Wasser",
+                body: "Gönn dir ein Glas Wasser."
+            },
+            eyes: {
+                title: "Augen-Pause",
+                body: "Schau 20 Sekunden lang auf etwas, das 20 Fuß (ca. 6 m) entfernt ist."
+            },
+            desk: {
+                sit: {
+                    title: "Zeit zum Sitzen",
+                    body: "Wechsle zurück in die Sitzposition."
+                },
+                stand: {
+                    title: "Zeit zum Stehen",
+                    body: "Wechsle in die Stehposition."
+                }
+            }
         },
         radio: {
             panelTitle: "TuneIn Radio",
@@ -124,10 +152,12 @@ const TRANSLATIONS = {
                 weather: "Wetter",
                 holidays: "Feiertage",
                 quote: "Zitat des Tages",
+                rss: "News",
                 worldClock: "Weltuhr",
                 radio: "Radio",
                 meetings: "Meetings",
-                pomodoro: "Pomodoro"
+                pomodoro: "Pomodoro",
+                wellness: "Wellness"
             },
             language: "Sprache",
             userName: "Dein Name",
@@ -144,6 +174,9 @@ const TRANSLATIONS = {
             holidayCountry: "Länder-Code",
             holidayHint: "Zweistelliger Ländercode, z. B. \"DE\" für Deutschland, \"AT\" für Österreich, \"CH\" für die Schweiz, \"US\" für die USA.",
             quoteEnabled: "Zitat des Tages anzeigen",
+            rssEnabled: "News-Karte anzeigen",
+            rssFeeds: "RSS-Feeds",
+            rssHint: "Eine Feed-URL pro Zeile, z. B. https://www.tagesschau.de/xml/rss2/.",
             worldClock1: "Weltuhr 1",
             worldClock2: "Weltuhr 2",
             worldClockNone: "— Keine —",
@@ -156,6 +189,10 @@ const TRANSLATIONS = {
             pomodoroShortBreak: "Kurze Pause (Min.)",
             pomodoroLongBreak: "Lange Pause (Min.)",
             pomodoroRounds: "Runden bis lange Pause",
+            waterEnabled: "Wasser-Erinnerung",
+            eyesEnabled: "Augen-Pause",
+            deskEnabled: "Steh-Erinnerung",
+            wellnessInterval: "Intervall (Min.)",
             cancel: "Abbrechen",
             save: "Speichern"
         }
@@ -164,7 +201,8 @@ const TRANSLATIONS = {
         widgets: {
             calendar: "Calendar",
             bookmarks: "Bookmarks",
-            today: "Today"
+            today: "Today",
+            news: "News"
         },
         bookmarks: {
             general: "General",
@@ -195,6 +233,10 @@ const TRANSLATIONS = {
                 today: "Today: {name}",
                 next: "Next holiday: {name} ({date})",
                 none: "No more holidays this year"
+            },
+            rss: {
+                error: "News unavailable",
+                empty: "No headlines found"
             }
         },
         search: {
@@ -202,6 +244,29 @@ const TRANSLATIONS = {
         },
         ai: {
             title: "New AI chat"
+        },
+        zen: {
+            toggleTitle: "Zen mode"
+        },
+        wellness: {
+            water: {
+                title: "Time for water",
+                body: "Grab a glass of water."
+            },
+            eyes: {
+                title: "Eye break",
+                body: "Look at something 20 feet (about 6 m) away for 20 seconds."
+            },
+            desk: {
+                sit: {
+                    title: "Time to sit",
+                    body: "Switch back to sitting."
+                },
+                stand: {
+                    title: "Time to stand",
+                    body: "Switch to standing."
+                }
+            }
         },
         radio: {
             panelTitle: "TuneIn Radio",
@@ -270,10 +335,12 @@ const TRANSLATIONS = {
                 weather: "Weather",
                 holidays: "Holidays",
                 quote: "Quote of the day",
+                rss: "News",
                 worldClock: "World clock",
                 radio: "Radio",
                 meetings: "Meetings",
-                pomodoro: "Pomodoro"
+                pomodoro: "Pomodoro",
+                wellness: "Wellness"
             },
             language: "Language",
             userName: "Your name",
@@ -290,6 +357,9 @@ const TRANSLATIONS = {
             holidayCountry: "Country code",
             holidayHint: "Two-letter country code, e.g. \"DE\" for Germany, \"AT\" for Austria, \"CH\" for Switzerland, \"US\" for the United States.",
             quoteEnabled: "Show quote of the day",
+            rssEnabled: "Show news card",
+            rssFeeds: "RSS feeds",
+            rssHint: "One feed URL per line, e.g. https://www.tagesschau.de/xml/rss2/.",
             worldClock1: "World clock 1",
             worldClock2: "World clock 2",
             worldClockNone: "— None —",
@@ -302,6 +372,10 @@ const TRANSLATIONS = {
             pomodoroShortBreak: "Short break (min)",
             pomodoroLongBreak: "Long break (min)",
             pomodoroRounds: "Rounds until long break",
+            waterEnabled: "Water reminder",
+            eyesEnabled: "Eye break reminder",
+            deskEnabled: "Standing reminder",
+            wellnessInterval: "Interval (min)",
             cancel: "Cancel",
             save: "Save"
         }

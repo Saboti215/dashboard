@@ -72,30 +72,82 @@ body::after {
     z-index: 10;
 }
 
-/* Grid Dashboard Layout */
+/* Grid Dashboard Layout. Locked to the viewport height (Landscape/"Alles auf einen Blick") so the
+   page never grows taller than the screen and scrolls off-screen; individual cards scroll
+   internally instead (see .left-column/.right-column below). Falls back to a normal, scrolling
+   single column on portrait/narrow screens (see the orientation media query further down). */
 #dashboard {
-    width: 80vw;
-    max-width: 2000px;
+    width: min(92vw, 2100px);
     margin: 0 auto;
     padding: 30px 20px;
     display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
     gap: 25px;
-    min-height: calc(100vh - 60px);
+    height: 100dvh;
+    box-sizing: border-box;
+    overflow: hidden;
     align-items: stretch;
 }
 
-/* Without a calendar embed configured, #calendar-container is display:none and grid auto-placement
-   would otherwise squeeze .right-column into the first (wider) track alone, leaving dead space on
-   the right. Switch to a single, centered column instead. */
+/* Without a calendar embed configured, #calendar-container is display:none and the left column
+   would otherwise carry only the News card, leaving dead space. Flatten both column wrappers
+   (display:contents) into one centered, 900px-wide, FIXED 2-column grid: Hero and Bookmarks each
+   span both columns (their own full-width row — Bookmarks gets to be wide here, unlike the
+   two-column layout where it shares the row with Today), and Today + News share the row below,
+   side by side. `order` reassigns each card's row/column slot regardless of DOM order (News is
+   normally a child of .left-column, ahead of .right-column's cards in the markup).
+   Fixed 2 columns rather than auto-fit: an earlier version used auto-fit, and because Hero's
+   full-width span touched every implicit auto-fit track, none of them ever counted as "empty" and
+   collapsed — on a 900px+ container that created 3+ narrow tracks instead of 2 usable ones. A
+   static 2-column grid has no such ambiguity. Still locked to the viewport (height:100dvh via the
+   base #dashboard rule) with a 3-row height budget below, so Bookmarks/News scroll internally
+   instead of growing the page past one screen. */
 #dashboard.no-calendar {
-    grid-template-columns: 1fr;
-    justify-items: center;
+    width: min(1200px, 92vw);
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 30px;
+    justify-items: stretch;
+    align-items: stretch;
 }
 
+#dashboard.no-calendar .left-column,
 #dashboard.no-calendar .right-column {
-    width: 100%;
-    max-width: 560px;
+    display: contents;
+}
+
+#dashboard.no-calendar .hero {
+    order: 1;
+    grid-column: 1 / -1;
+}
+
+/* Bookmarks: full width, own row, scrolls internally (via #apps-wrapper's overflow-y:auto). */
+#dashboard.no-calendar #apps-container {
+    order: 2;
+    grid-column: 1 / -1;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Today + News share the bottom row. Today stays at its own natural height (align-self:start)
+   instead of stretching to match News and leaving a large empty gap under its short content;
+   News fills and scrolls internally (via #news-wrapper's overflow-y:auto). */
+#dashboard.no-calendar #today-container {
+    order: 3;
+    align-self: start;
+}
+
+#dashboard.no-calendar #news-container {
+    order: 4;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Zen mode hides .left-column (which is display:contents here, not a real box) via display:none;
+   an ID selector outranks a class-only one, so without this, .left-column's display:contents
+   could still win and leave News visible. Belt-and-suspenders for the rare case both are active. */
+body.zen-mode #dashboard.no-calendar .left-column {
+    display: none;
 }
 
 /* Containers */
@@ -120,9 +172,24 @@ body::after {
                 0 0 40px -10px var(--accent-glow);
 }
 
-/* Calendar Container specific layout */
-#calendar-container {
+/* Left Column Stack: Calendar (capped, no longer full-height) + News below it. Both share the
+   column's height budget so neither pushes the other off-screen; each scrolls internally instead
+   (see #calendar-wrapper's overflow:hidden and #news-wrapper's overflow-y:auto). */
+.left-column {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
     height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Calendar Container specific layout. flex-basis lets it take the lion's share of the column's
+   height without being forced to fill it entirely (see (2) in the layout plan: it should no
+   longer run the full column height once News sits below it). */
+#calendar-container {
+    flex: 2 1 0;
+    min-height: 200px;
     min-width: 0;
 }
 
@@ -175,11 +242,25 @@ body::after {
     background-color: transparent;
 }
 
-/* Right Column Stack */
+/* Right Column Stack: Hero (Clock + Search), Bookmarks, Today. Height-budgeted like .left-column
+   so Bookmarks scrolls internally instead of pushing the column past the viewport. */
 .right-column {
     display: flex;
     flex-direction: column;
     gap: 30px;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Hero: Clock + Search grouped into one unit so they can be addressed together for the
+   no-calendar full-width header and for centering in Zen mode. Natural height — never grows to
+   fill the column. */
+.hero {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    flex: 0 0 auto;
 }
 
 /* Clock Card */
@@ -238,6 +319,86 @@ body::after {
 /* Search + Gemini Widget */
 #search-container {
     padding: 15px;
+    position: relative;
+    /* Without an explicit z-index, "position: relative" alone doesn't establish a stacking
+       context, so absolutely positioned children below (#search-math-result,
+       #search-bookmark-suggestions) would render UNDER later flex siblings like #apps-container
+       ("Lesezeichen") instead of floating above them. */
+    z-index: 20;
+}
+
+/* Spotlight search result: the live value of a math expression typed into #search-input
+   (src/calc.js), floating just below the search bar. Uses opacity/transform (not display) so it
+   fades in smoothly and never shifts the layout of the widgets below it. */
+#search-math-result {
+    position: absolute;
+    top: 100%;
+    left: 15px;
+    right: 15px;
+    margin-top: 8px;
+    padding: 10px 16px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent-color);
+    text-align: right;
+    opacity: 0;
+    transform: translateY(-6px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 10;
+}
+
+#search-math-result.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Spotlight bookmark suggestions: same floating card treatment as #search-math-result, but a
+   list of rows instead of a single right-aligned line. x-show toggles this one (rather than the
+   opacity/.visible pattern above) since Alpine's x-show already handles display:none for us and
+   there's no single-line/list layout to cross-fade between. */
+#search-bookmark-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 15px;
+    right: 15px;
+    margin-top: 8px;
+    padding: 6px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+}
+
+.search-suggestion-row {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--text-primary);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.search-suggestion-row:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.search-suggestion-row.highlighted {
+    background-color: var(--accent-glow);
+    color: var(--accent-color);
 }
 
 #search-wrapper {
@@ -325,9 +486,11 @@ body::after {
     box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
 }
 
-/* Apps/Links Widget */
+/* Apps/Links Widget. Shares the right column's height budget with Today; scrolls internally via
+   #apps-wrapper's overflow-y:auto below instead of pushing the column past the viewport. */
 #apps-container {
-    flex-grow: 1;
+    flex: 1 1 0;
+    min-height: 120px;
 }
 
 #apps-wrapper {
@@ -336,6 +499,17 @@ body::after {
     gap: 25px;
     overflow-y: auto;
     padding-right: 5px;
+}
+
+/* Without a calendar, Bookmarks spans the full width (see #dashboard.no-calendar #apps-container
+   above), which otherwise stretches a single column of categories thin. Lay categories out in two
+   columns instead so the extra width is used; falls back to one column again in the portrait
+   media query below, where there isn't width to spare. */
+#dashboard.no-calendar #apps-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-content: start;
+    gap: 25px;
 }
 
 /* Custom Scrollbar for Apps list */
@@ -430,7 +604,12 @@ body::after {
 }
 
 /* "Today" Widget: weather, public holiday, quote of the day. Each row is toggled independently
-   (src/extras.js adds .feature-hidden); the whole card hides itself when none are enabled. */
+   (src/extras.js adds .feature-hidden); the whole card hides itself when none are enabled. Natural
+   height in the right column's flex stack — it never needs to grow or shrink. */
+#today-container {
+    flex: 0 0 auto;
+}
+
 #today-wrapper {
     display: flex;
     flex-direction: column;
@@ -476,6 +655,71 @@ body::after {
     font-size: 12px;
     color: var(--text-secondary);
     margin-top: 4px;
+}
+
+/* News card: latest headlines from the RSS/Atom feeds configured in Settings (src/extras.js /
+   src/stores.js's loadRss()). Hides itself entirely (feature-hidden) when disabled/unconfigured.
+   Shares the left column's height budget with the calendar above it (see .left-column) instead of
+   a fixed max-height, so it always stays on-screen and scrolls internally. */
+#news-container {
+    flex: 1 1 0;
+    min-height: 140px;
+}
+
+#news-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+#news-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+#news-wrapper::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 3px;
+}
+
+#news-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.news-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.news-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.news-item-title {
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.35;
+}
+
+.news-item-source {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.news-empty {
+    font-size: 13px;
+    color: var(--text-secondary);
 }
 
 /* Floating Radio Panel & Button */
@@ -648,7 +892,7 @@ body::after {
     align-items: center;
     justify-content: center;
     transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-                background-color 0.25s, border-color 0.25s, box-shadow 0.3s;
+                background-color 0.25s, border-color 0.25s, box-shadow 0.3s, opacity 0.4s ease;
     z-index: 1001;
 }
 
@@ -873,6 +1117,90 @@ body.pomodoro-window {
     border-color: var(--accent-color);
     box-shadow: 0 0 20px var(--accent-glow);
     background: rgba(30, 41, 59, 0.85);
+}
+
+/* Floating Zen-Mode Button (top-right corner, left of #settings-toggle). Stays visible even while
+   zen mode is active (see the exemption in the ".zen-mode" rule below) so there's always a way
+   back to the full dashboard without touching the keyboard. */
+#zen-toggle {
+    position: fixed;
+    top: 25px;
+    right: 85px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--card-border);
+    color: var(--text-primary);
+    cursor: pointer;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1001;
+}
+
+#zen-toggle svg {
+    width: 20px;
+    height: 20px;
+}
+
+#zen-toggle:hover {
+    transform: scale(1.1);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 20px var(--accent-glow);
+    background: rgba(30, 41, 59, 0.85);
+}
+
+#zen-toggle.active {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    background: rgba(30, 41, 59, 0.85);
+}
+
+/* Zen mode: reduce the dashboard to just the Hero (Clock + Search), centered symmetrically in the
+   viewport. #dashboard collapses to a single region and every other grid child is taken out of
+   flow with display:none (rather than .feature-hidden's !important variant, so it stays overridable
+   and reversible). .right-column keeps an explicit capped width (rather than shrink-wrapping via
+   justify-items:center alone) so the search bar/clock render at their normal card width instead of
+   collapsing to their minimum content size. */
+body.zen-mode #dashboard {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: center;
+}
+
+body.zen-mode .left-column,
+body.zen-mode #apps-container,
+body.zen-mode #today-container {
+    display: none;
+}
+
+body.zen-mode .right-column {
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+    overflow: visible;
+}
+
+/* The floating widgets/buttons below live outside #dashboard, so they still fade via
+   opacity/pointer-events (not display:none) so the fade is animatable both ways.
+   #radio-toggle/#meetings-toggle/#settings-toggle already transition "all" (which covers opacity)
+   and #radio-panel/#pomodoro-panel/#meeting-portal already transition opacity+transform for their
+   .active/.visible open state, so only #pomodoro-toggle (see its own rule) needed an explicit
+   opacity transition added. #zen-toggle is deliberately excluded so exiting never requires the
+   keyboard. */
+body.zen-mode #radio-toggle,
+body.zen-mode #radio-panel,
+body.zen-mode #pomodoro-toggle,
+body.zen-mode #pomodoro-panel,
+body.zen-mode #meetings-toggle,
+body.zen-mode #meeting-portal,
+body.zen-mode #settings-toggle {
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* Generic Modal (used by both the Meetings and the Settings modal) */
@@ -1386,23 +1714,59 @@ body.pomodoro-window {
     height: 16px;
 }
 
-/* Media Queries for responsive behavior */
-@media (max-width: 1024px) {
+/* Media Queries for responsive behavior. Landscape desktop (the rules above) is the primary,
+   fine-tuned target; portrait/narrow screens get a deliberately simple fallback instead of a
+   second bespoke layout: drop the viewport-height lock so cards get their natural height and the
+   page scrolls normally, and stack everything in one column. Nothing should ever clip or overlap
+   here, even if it isn't as polished as the landscape layout. */
+@media (orientation: portrait), (max-width: 1024px) {
     #dashboard {
         width: 100%;
+        height: auto;
+        overflow: visible;
         grid-template-columns: 1fr;
         padding: 25px;
         gap: 25px;
     }
 
-    #calendar-container {
-        height: 600px;
+    .left-column,
+    .right-column {
+        height: auto;
+        overflow: visible;
     }
 
-    /* Already single-column and full-width here regardless of the calendar, so drop the
-       desktop-only centering/width cap from #dashboard.no-calendar. */
-    #dashboard.no-calendar .right-column {
+    #calendar-container {
+        flex: none;
+        height: 55vh;
+    }
+
+    #news-container,
+    #apps-container {
+        flex: none;
+    }
+
+    /* Already single-column and full-width here regardless of state, so drop the desktop-only
+       width cap used to center Zen mode's Hero. */
+    body.zen-mode .right-column {
         max-width: none;
+    }
+
+    /* Same for the no-calendar profile's fixed 2-column grid — collapse it to one full-width
+       column and let every card take its natural height; the page scrolls instead. */
+    #dashboard.no-calendar {
+        width: 100%;
+        grid-template-columns: 1fr;
+        grid-template-rows: none;
+    }
+
+    #dashboard.no-calendar #apps-wrapper {
+        grid-template-columns: 1fr;
+    }
+
+    #dashboard.no-calendar #apps-container,
+    #dashboard.no-calendar #news-container {
+        height: auto;
+        overflow: visible;
     }
 }
 
@@ -1432,10 +1796,11 @@ body.pomodoro-window {
 
 /* Smooth Transitions */
 body, .container, #bg-overlay, #calendar-wrapper iframe, .app-grid a, #radio-toggle, #radio-panel {
-    transition: background-color 0.4s ease, 
-                background 0.4s ease, 
-                border-color 0.4s ease, 
-                color 0.4s ease, 
-                box-shadow 0.4s ease, 
-                filter 0.4s ease;
+    transition: background-color 0.4s ease,
+                background 0.4s ease,
+                border-color 0.4s ease,
+                color 0.4s ease,
+                box-shadow 0.4s ease,
+                filter 0.4s ease,
+                opacity 0.4s ease;
 }

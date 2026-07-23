@@ -105,10 +105,13 @@ function getDefaultSettings() {
         accentColor: "#6366f1",
         searchEngine: "brave",
         aiAssistant: "gemini",
+        zenMode: false,
         calendarIframe: "",
         weatherLocation: "",
         holidayCountry: "",
         quoteEnabled: true,
+        rssEnabled: true,
+        rssFeeds: "",
         worldClock1: "",
         worldClock2: "",
         tuneInId: "",
@@ -118,7 +121,15 @@ function getDefaultSettings() {
         pomodoroWorkMinutes: 25,
         pomodoroShortBreakMinutes: 5,
         pomodoroLongBreakMinutes: 15,
-        pomodoroRoundsUntilLongBreak: 4
+        pomodoroRoundsUntilLongBreak: 4,
+        // Wellness pings: background-service-worker-driven reminders (src/background.js), off by
+        // default so nobody gets surprise notifications right after installing the extension.
+        waterEnabled: false,
+        waterIntervalMinutes: 60,
+        eyesEnabled: false,
+        eyesIntervalMinutes: 20,
+        deskEnabled: false,
+        deskIntervalMinutes: 50
     };
 }
 
@@ -145,6 +156,8 @@ document.addEventListener("alpine:init", () => {
         holidayText: "",
         quoteText: "",
         quoteAuthor: "",
+        rssItems: [],
+        rssErrorText: "",
 
         bookmarkCategories: [],
         activeMeeting: null,
@@ -194,6 +207,15 @@ document.addEventListener("alpine:init", () => {
         },
         get quoteVisible() {
             return this.settings.quoteEnabled !== false;
+        },
+        get rssFeedUrls() {
+            return (this.settings.rssFeeds || "")
+                .split("\n")
+                .map(url => url.trim())
+                .filter(Boolean);
+        },
+        get rssVisible() {
+            return this.settings.rssEnabled !== false && this.rssFeedUrls.length > 0;
         },
         get todayVisible() {
             return this.weatherVisible || this.holidayVisible || this.quoteVisible;
@@ -250,6 +272,9 @@ document.addEventListener("alpine:init", () => {
         get settingsModalClass() {
             return { active: this.ui.settingsModalOpen };
         },
+        get zenToggleClass() {
+            return { active: this.settings.zenMode };
+        },
         get todayContainerClass() {
             return { "feature-hidden": !this.todayVisible };
         },
@@ -261,6 +286,9 @@ document.addEventListener("alpine:init", () => {
         },
         get quoteWidgetClass() {
             return { "feature-hidden": !this.quoteVisible };
+        },
+        get rssContainerClass() {
+            return { "feature-hidden": !this.rssVisible };
         },
         get worldClock1Class() {
             return { "feature-hidden": !this.worldClock1Visible };
@@ -393,6 +421,21 @@ document.addEventListener("alpine:init", () => {
             if (!hex) return;
             document.documentElement.style.setProperty("--accent-color", hex);
             document.documentElement.style.setProperty("--accent-glow", hexToRgba(hex, 0.15));
+        },
+
+        // ---- Zen mode (distraction-free UI): hides every secondary widget/button, leaving only
+        // the background, clock, and search bar. Persisted as its own settings key (not exposed in
+        // the Settings modal) so a toggle takes effect instantly and survives into new tabs. -------
+        applyZenMode() {
+            document.body.classList.toggle("zen-mode", !!this.settings.zenMode);
+        },
+
+        toggleZenMode() {
+            this.settings.zenMode = !this.settings.zenMode;
+            this.applyZenMode();
+
+            if (typeof chrome === "undefined" || !chrome.storage) return;
+            this.getSyncStorage().set({ zenMode: this.settings.zenMode });
         },
 
         // Called on load and again after every settings save, in case the language changed. Static
@@ -630,6 +673,44 @@ document.addEventListener("alpine:init", () => {
 
             this.quoteText = `"${quote[getLanguage()]}"`;
             this.quoteAuthor = `— ${quote.author}`;
+        },
+
+        // ---- RSS/Atom news ticker — fetched live from the user's configured feeds when a new tab
+        // opens (see loadRss() in dashboard.js's applyEverything()), cached for RSS_CACHE_TTL_MS so
+        // opening several tabs in a row doesn't re-fetch every one of them. Runs fully async, so it
+        // never blocks the rest of the dashboard from rendering. ------------------------------------
+        loadRss() {
+            if (!this.rssVisible) {
+                this.rssItems = [];
+                this.rssErrorText = "";
+                return;
+            }
+
+            const urls = this.rssFeedUrls;
+            const query = urls.join("\n");
+
+            getRssCache(cache => {
+                const fresh = cache && cache.query === query && (Date.now() - cache.fetchedAt) < RSS_CACHE_TTL_MS;
+                if (fresh) {
+                    this.renderRss(cache.items);
+                    return;
+                }
+
+                fetchRssFeeds(urls)
+                    .then(data => {
+                        saveRssCache(data);
+                        this.renderRss(data.items);
+                    })
+                    .catch(() => {
+                        this.rssItems = [];
+                        this.rssErrorText = t("extras.rss.error");
+                    });
+            });
+        },
+
+        renderRss(items) {
+            this.rssItems = items;
+            this.rssErrorText = items.length === 0 ? t("extras.rss.empty") : "";
         },
 
         // ---- meetings (stored in chrome.storage; managed through the Meetings modal) ----------
