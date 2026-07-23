@@ -10,7 +10,8 @@ im gleichen Glass-Look.
 
 Die gesamte Konfiguration erfolgt **in der Anwendung selbst** über das Einstellungs-Modal
 (Zahnrad-Symbol, oben rechts). Es gibt keine Konfigurationsdatei zu bearbeiten und keinen
-Build-Schritt – reines HTML/CSS/JS plus jQuery.
+Build-Schritt – reines HTML/CSS/JS plus Alpine.js (die CSP-konforme Build, erforderlich durch
+Manifest V3s Standard-`script-src 'self'`-Richtlinie) für reaktiven State und deklarative Bindings.
 
 ## Features
 

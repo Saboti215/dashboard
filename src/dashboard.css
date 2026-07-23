@@ -27,6 +27,12 @@
     display: none !important;
 }
 
+/* Alpine hides [x-cloak] elements until it has finished attaching to the DOM, so bindings never
+   flash their un-rendered template source (e.g. "{{ }}"-less but still momentarily unbound). */
+[x-cloak] {
+    display: none !important;
+}
+
 body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     color: var(--text-primary);
@@ -205,12 +211,14 @@ body::after {
     margin-top: 10px;
 }
 
-/* Optional greeting line, only shown once a name is set in Settings */
+/* Optional greeting line, only shown once a name is set in Settings. Visibility is entirely
+   owned by Alpine's x-show (index.html), which toggles an inline "display: none" — no
+   unconditional "display: none" here, since x-show's default state removes the inline override
+   rather than setting an explicit shown value, and a stylesheet display:none would then win. */
 #greeting {
     font-size: 14px;
     color: var(--text-secondary);
     margin-top: 14px;
-    display: none;
 }
 
 /* Extra timezones (Settings -> World clock), ticking along with the main clock */

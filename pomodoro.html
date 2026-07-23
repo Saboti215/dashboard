@@ -4,36 +4,39 @@
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="shortcut icon" href="assets/dashboard.svg">
-        <script src="./src/jquery-3.5.1.min.js"></script>
         <script src="./src/i18n.js"></script>
         <script src="./src/pomodoro-logic.js"></script>
+        <script src="./src/stores.js"></script>
         <script src="./src/pomodoro-ui.js"></script>
         <script src="./src/pomodoro-window.js"></script>
         <link rel="stylesheet" href="src/dashboard.css">
         <title>Pomodoro</title>
+        <!-- See index.html for why this must be the CSP build, must stay the LAST script tag, and
+             needs "defer" (all scripts here sit in <head>, before <body> exists). -->
+        <script defer src="./src/alpine-csp.min.js"></script>
     </head>
     <!-- Standalone popup window (opened via #pomodoro-open-window in the main dashboard), kept
          independent of the New Tab page: closing/navigating away from the dashboard tab doesn't
          affect this window, and the background service worker keeps the timer itself ticking and
          notifying regardless of whether either of them is open. -->
-    <body class="pomodoro-window">
+    <body class="pomodoro-window" x-data="pomodoroWindow" x-cloak>
         <div id="pomodoro-panel" class="active">
             <div class="pomodoro-header">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="pomodoro-icon">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span id="pomodoro-phase">Arbeiten</span>
+                <span id="pomodoro-phase" x-text="$store.dashboard.pomodoro.phaseLabel">Arbeiten</span>
             </div>
-            <div id="pomodoro-time">25:00</div>
-            <div id="pomodoro-round"></div>
+            <div id="pomodoro-time" x-text="$store.dashboard.pomodoro.timeText">25:00</div>
+            <div id="pomodoro-round" x-text="$store.dashboard.pomodoro.roundLabel"></div>
             <div class="pomodoro-controls">
-                <button type="button" id="pomodoro-play-pause" class="btn btn-primary">Start</button>
-                <button type="button" id="pomodoro-skip" data-i18n-title="pomodoro.skip" title="Überspringen">
+                <button type="button" id="pomodoro-play-pause" class="btn btn-primary" x-bind:class="$store.dashboard.pomodoroPlayPauseClass" x-text="$store.dashboard.pomodoro.playPauseLabel" x-on:click="playPause">Start</button>
+                <button type="button" id="pomodoro-skip" data-i18n-title="pomodoro.skip" title="Überspringen" x-on:click="skip">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                     </svg>
                 </button>
-                <button type="button" id="pomodoro-reset" data-i18n-title="pomodoro.reset" title="Zurücksetzen">
+                <button type="button" id="pomodoro-reset" data-i18n-title="pomodoro.reset" title="Zurücksetzen" x-on:click="reset">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>

@@ -1,69 +1,45 @@
 /**
- * Shared Pomodoro widget wiring — used by both the dashboard's floating panel (index.html /
- * src/dashboard.js) and the standalone pomodoro.html popup window. Both pages use the same set of
- * element IDs: #pomodoro-time, #pomodoro-phase, #pomodoro-round, #pomodoro-play-pause,
- * #pomodoro-skip, #pomodoro-reset. #pomodoro-toggle (the floating open/close button) only exists
- * on the dashboard page; selecting it here on the popup page is a harmless no-op.
+ * Shared Pomodoro widget logic — used by both the dashboard's floating panel (index.html /
+ * src/dashboard.js) and the standalone pomodoro.html popup window (src/pomodoro-window.js). Both
+ * pages render the same Alpine.store('dashboard') "pomodoro" slice, so the dashboard panel and the
+ * popup window always agree, however many of them happen to be open.
  *
  * This is a "thin client": it never writes chrome.storage.local's "pomodoroState" itself. Button
  * clicks send action messages to the background service worker (src/background.js), the only
- * writer, and this file just renders whatever state comes back — so the dashboard panel and the
- * popup window always agree, however many of them happen to be open.
+ * writer, and this file just renders whatever state comes back into the store — index.html's and
+ * pomodoro.html's templates bind to store.pomodoro.* directly.
  */
 
 let pomodoroSettingsCache = null;
 let pomodoroAudioContext = null;
 let pomodoroWidgetWired = false;
 
-function initPomodoroWidget() {
-    if (!$("#pomodoro-time").length) return; // this page doesn't have the widget
-
-    renderPomodoroTick();
-
-    // The dashboard page calls this again after every settings save (so re-enabling the feature
-    // without a reload works); guard against re-registering the interval/listeners/click handlers
-    // each time, which would otherwise double up (e.g. the beep playing twice).
-    if (pomodoroWidgetWired) return;
-    pomodoroWidgetWired = true;
-
-    window.setInterval(renderPomodoroTick, 1000);
-
-    chrome.storage.onChanged.addListener((changes, area) => {
-        if (area === "local" && changes.pomodoroState) {
-            renderPomodoroTick();
-        }
-
-        // Settings are stored as flat top-level keys (not nested under one "settings" key), so
-        // check the specific duration/round keys this widget actually cares about.
-        const durationKeys = [
-            "pomodoroWorkMinutes", "pomodoroShortBreakMinutes",
-            "pomodoroLongBreakMinutes", "pomodoroRoundsUntilLongBreak"
-        ];
-        if (area === "sync" && durationKeys.some(key => changes[key])) {
-            pomodoroSettingsCache = null; // refetch on next render
-            renderPomodoroTick();
-        }
-    });
-
-    // The background broadcasts this when a phase ends; only pages that are actually open hear it.
-    chrome.runtime.onMessage.addListener(message => {
-        if (message && message.type === "pomodoro:beep") playPomodoroBeep();
-    });
-
-    $("#pomodoro-play-pause").on("click", () => {
+// Mixed into both Alpine.data('dashboardRoot') and Alpine.data('pomodoroWindow') root components
+// (via Object.assign / spread) so their pomodoro buttons can call these directly, e.g.
+// x-on:click="playPause".
+const pomodoroMethods = {
+    playPause() {
         unlockPomodoroAudio();
         getPomodoroStateForRender(state => {
             sendPomodoroAction(state.running ? "pomodoro:pause" : "pomodoro:start");
         });
-    });
-
-    $("#pomodoro-skip").on("click", () => {
+    },
+    skip() {
         unlockPomodoroAudio();
         sendPomodoroAction("pomodoro:skip");
-    });
-
-    $("#pomodoro-reset").on("click", () => sendPomodoroAction("pomodoro:reset"));
-}
+    },
+    reset() {
+        sendPomodoroAction("pomodoro:reset");
+    },
+    openPomodoroWindow() {
+        chrome.windows.create({
+            url: chrome.runtime.getURL("pomodoro.html"),
+            type: "popup",
+            width: 320,
+            height: 330
+        });
+    }
+};
 
 function sendPomodoroAction(type) {
     chrome.runtime.sendMessage({ type });
@@ -94,33 +70,56 @@ function getPomodoroStateForRender(cb) {
     });
 }
 
-function renderPomodoroTick() {
+// Installs the 1-second render tick + cross-context sync listeners, writing results into the
+// given Alpine store instead of the DOM. Guarded so re-enabling the feature from Settings (which
+// calls this again) doesn't double up intervals/listeners — e.g. the beep playing twice.
+function installPomodoroSync(store) {
+    renderPomodoroTick(store);
+
+    if (pomodoroWidgetWired) return;
+    pomodoroWidgetWired = true;
+
+    window.setInterval(() => renderPomodoroTick(store), 1000);
+
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === "local" && changes.pomodoroState) {
+            renderPomodoroTick(store);
+        }
+
+        // Settings are stored as flat top-level keys (not nested under one "settings" key), so
+        // check the specific duration/round keys this widget actually cares about.
+        const durationKeys = [
+            "pomodoroWorkMinutes", "pomodoroShortBreakMinutes",
+            "pomodoroLongBreakMinutes", "pomodoroRoundsUntilLongBreak"
+        ];
+        if (area === "sync" && durationKeys.some(key => changes[key])) {
+            pomodoroSettingsCache = null; // refetch on next render
+            renderPomodoroTick(store);
+        }
+    });
+
+    // The background broadcasts this when a phase ends; only pages that are actually open hear it.
+    chrome.runtime.onMessage.addListener(message => {
+        if (message && message.type === "pomodoro:beep") playPomodoroBeep();
+    });
+}
+
+function renderPomodoroTick(store) {
     getPomodoroStateForRender(state => {
         getPomodoroSettingsCached(settings => {
             const remainingMs = getPomodoroRemainingMs(state, Date.now());
 
-            $("#pomodoro-time").text(formatPomodoroTime(remainingMs));
-            $("#pomodoro-phase").text(t(`pomodoro.phase.${state.phase}`));
-            $("#pomodoro-round").text(t("pomodoro.round", {
+            store.pomodoro.timeText = formatPomodoroTime(remainingMs);
+            store.pomodoro.phaseLabel = t(`pomodoro.phase.${state.phase}`);
+            store.pomodoro.roundLabel = t("pomodoro.round", {
                 current: state.round,
                 total: settings.pomodoroRoundsUntilLongBreak || 4
-            }));
-
-            $("#pomodoro-play-pause")
-                .text(t(state.running ? "pomodoro.pause" : "pomodoro.start"))
-                .toggleClass("running", state.running);
-
+            });
+            store.pomodoro.playPauseLabel = t(state.running ? "pomodoro.pause" : "pomodoro.start");
             // ".running" (not ".active", which the dashboard page uses for "panel is open") so the
-            // pulse indicator and the open/close state never fight over the same class.
-            $("#pomodoro-toggle").toggleClass("running", state.running);
-
-            // Only present on the dashboard page (a no-op on the popup, which has no #pomodoro-toggle
-            // and thus no #pomodoro-badge either). Shown only while running AND the panel is closed —
-            // the panel itself already shows the full countdown once it's open.
-            const panelOpen = $("#pomodoro-panel").hasClass("active");
-            $("#pomodoro-badge")
-                .text(formatPomodoroTime(remainingMs))
-                .toggleClass("visible", state.running && !panelOpen);
+            // pulse indicator and the open/close state never fight over the same class — see the
+            // pomodoroToggleClass/pomodoroPlayPauseClass getters in src/stores.js.
+            store.pomodoro.running = state.running;
         });
     });
 }

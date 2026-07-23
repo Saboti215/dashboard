@@ -1,30 +1,38 @@
 /**
  * Bootstrap for the standalone Pomodoro popup window (pomodoro.html). Applies the user's stored
- * language and accent color for visual consistency with the main dashboard, then wires up the
- * widget via the same initPomodoroWidget() (src/pomodoro-ui.js) used inside the dashboard's
- * floating panel — the actual countdown/state logic is entirely shared, only the surrounding page
- * differs.
+ * language and accent color for visual consistency with the main dashboard, then installs the
+ * shared pomodoro sync (src/pomodoro-ui.js) against the same Alpine.store('dashboard') used on
+ * the New Tab page — the actual countdown/state logic is entirely shared, only the surrounding
+ * page differs.
  */
 
-$(document).ready(() => {
-    chrome.storage.sync.get({
-        language: detectDefaultLanguage(),
-        accentColor: "#6366f1"
-    }, settings => {
-        setLanguage(settings.language);
-        applyStaticTranslations();
-        applyAccentColor(settings.accentColor);
-        initPomodoroWidget();
-    });
+document.addEventListener("alpine:init", () => {
+    Alpine.data("pomodoroWindow", () => ({
+        ...pomodoroMethods,
+
+        init() {
+            const store = this.$store.dashboard;
+
+            chrome.storage.sync.get({
+                language: detectDefaultLanguage(),
+                accentColor: "#6366f1"
+            }, settings => {
+                setLanguage(settings.language);
+                applyStaticTranslations();
+                this.applyAccentColor(settings.accentColor);
+                installPomodoroSync(store);
+            });
+        },
+
+        applyAccentColor(hex) {
+            if (!hex) return;
+            document.documentElement.style.setProperty("--accent-color", hex);
+            document.documentElement.style.setProperty("--accent-glow", hexToRgba(hex, 0.15));
+        }
+    }));
 });
 
-function applyAccentColor(hex) {
-    if (!hex) return;
-    document.documentElement.style.setProperty("--accent-color", hex);
-    document.documentElement.style.setProperty("--accent-glow", hexToRgba(hex, 0.15));
-}
-
-// Small, intentionally duplicated copy of dashboard.js's hexToRgba — not worth sharing a whole
+// Small, intentionally duplicated copy of src/stores.js's hexToRgba — not worth sharing a whole
 // utility file across contexts for a single helper function.
 function hexToRgba(hex, alpha) {
     const clean = (hex || "").replace("#", "");

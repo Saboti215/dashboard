@@ -1,10 +1,11 @@
 /**
- * Four small, independently toggleable "extra info" features: weather, public holidays, the quote
- * of the day, and a world clock. Each has its own loadX(settings) entry point, called from
- * src/dashboard.js's ready()/settings-save flow exactly like loadRadio()/loadCalendar()/
- * loadMeetings() — same feature-hidden toggling, same re-render-on-language-change pattern.
+ * Weather, holidays, and world-clock data helpers — the "extras" row on the dashboard's Today
+ * card, plus the world-clock zone table. These are pure data/network functions with no
+ * DOM/jQuery/Alpine of their own; src/stores.js's Alpine.store('dashboard') methods
+ * (loadWeather/loadHolidays/refreshWorldClockSlot) call into these and write the results into
+ * reactive store properties, which index.html's templates bind to directly.
  *
- * Weather and holidays are the only new outbound network requests in the whole extension; both
+ * Weather and holidays are the only outbound network requests in the whole extension; both
  * Open-Meteo and Nager.Date are free, keyless, and support CORS for direct browser calls, so no
  * extra manifest permission is needed. Both are cached in chrome.storage.local to avoid re-fetching
  * on every single page load. The quote of the day is bundled offline (src/quotes-data.js) on
@@ -53,30 +54,6 @@ const WEATHER_ICONS = {
     storm: '<path stroke-linecap="round" stroke-linejoin="round" d="M7 13a4 4 0 110-8 5 5 0 019.9 1.05A3.5 3.5 0 0117 13H7z"/><path stroke-linecap="round" stroke-linejoin="round" d="M13 15l-3 4h3l-2 4"/>'
 };
 
-function loadWeather(settings) {
-    const location = (settings.weatherLocation || "").trim();
-    const enabled = !!location;
-    $("#weather-widget").toggleClass("feature-hidden", !enabled);
-    updateTodayCardVisibility(settings);
-    if (!enabled) return;
-
-    getWeatherCache(cache => {
-        const fresh = cache && cache.query === location && (Date.now() - cache.fetchedAt) < WEATHER_CACHE_TTL_MS;
-        if (fresh) {
-            renderWeather(cache);
-            return;
-        }
-
-        renderWeatherLoading();
-        fetchWeather(location)
-            .then(data => {
-                saveWeatherCache(data);
-                renderWeather(data);
-            })
-            .catch(() => renderWeatherError());
-    });
-}
-
 function getWeatherCache(cb) {
     if (typeof chrome === "undefined" || !chrome.storage) { cb(null); return; }
     chrome.storage.local.get({ weatherCache: null }, data => cb(data.weatherCache));
@@ -117,64 +94,9 @@ async function fetchWeather(location) {
     };
 }
 
-function renderWeatherLoading() {
-    $("#weather-icon").html("");
-    $("#weather-text").text(t("extras.loading"));
-}
-
-function renderWeatherError() {
-    $("#weather-icon").html("");
-    $("#weather-text").text(t("extras.weather.error"));
-}
-
-function renderWeather(data) {
-    const code = data.current ? data.current.weather_code : undefined;
-    const condition = WEATHER_CODE_MAP[code] || WEATHER_CODE_MAP[3];
-    const temp = data.current ? Math.round(data.current.temperature_2m) : null;
-    const max = data.daily && data.daily.temperature_2m_max ? Math.round(data.daily.temperature_2m_max[0]) : null;
-    const min = data.daily && data.daily.temperature_2m_min ? Math.round(data.daily.temperature_2m_min[0]) : null;
-
-    $("#weather-icon").html(
-        `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">${WEATHER_ICONS[condition.icon]}</svg>`
-    );
-
-    const parts = [];
-    if (temp !== null) parts.push(`${temp}°C`);
-    parts.push(t(`extras.weather.condition.${condition.label}`));
-    if (min !== null && max !== null) parts.push(`${min}°/${max}°`);
-
-    $("#weather-text").text(`${escapeHtml(data.name)} · ${parts.join(" · ")}`);
-}
-
 // ---------------------------------------------------------------------------------------------
 // Public holidays (Nager.Date — https://date.nager.at, free, no API key)
 // ---------------------------------------------------------------------------------------------
-
-function loadHolidays(settings) {
-    const country = (settings.holidayCountry || "").trim().toUpperCase();
-    const enabled = !!country;
-    $("#holiday-widget").toggleClass("feature-hidden", !enabled);
-    updateTodayCardVisibility(settings);
-    if (!enabled) return;
-
-    const year = new Date().getFullYear();
-
-    getHolidayCache(cache => {
-        const fresh = cache && cache.year === year && cache.country === country;
-        if (fresh) {
-            renderHolidays(cache.holidays);
-            return;
-        }
-
-        $("#holiday-text").text(t("extras.loading"));
-        fetchHolidays(year, country)
-            .then(holidays => {
-                saveHolidayCache({ year, country, holidays });
-                renderHolidays(holidays);
-            })
-            .catch(() => $("#holiday-text").text(t("extras.holiday.error")));
-    });
-}
 
 function getHolidayCache(cb) {
     if (typeof chrome === "undefined" || !chrome.storage) { cb(null); return; }
@@ -192,60 +114,9 @@ async function fetchHolidays(year, country) {
     return res.json();
 }
 
-function renderHolidays(holidays) {
-    const todayStr = formatDateForStorage(new Date());
-    const today = holidays.find(h => h.date === todayStr);
-
-    if (today) {
-        $("#holiday-text").text(t("extras.holiday.today", { name: today.localName }));
-        return;
-    }
-
-    const next = holidays
-        .filter(h => h.date >= todayStr)
-        .sort((a, b) => a.date.localeCompare(b.date))[0];
-
-    if (next) {
-        $("#holiday-text").text(t("extras.holiday.next", { name: next.localName, date: formatDateForDisplay(next.date) }));
-    } else {
-        $("#holiday-text").text(t("extras.holiday.none"));
-    }
-}
-
 // ---------------------------------------------------------------------------------------------
-// Quote of the day — bundled offline (src/quotes-data.js), rotates once per calendar day
-// ---------------------------------------------------------------------------------------------
-
-function loadQuote(settings) {
-    const enabled = settings.quoteEnabled !== false;
-    $("#quote-widget").toggleClass("feature-hidden", !enabled);
-    updateTodayCardVisibility(settings);
-    if (!enabled) return;
-
-    renderQuote();
-}
-
-function renderQuote() {
-    const start = new Date(new Date().getFullYear(), 0, 0);
-    const diff = Date.now() - start.getTime();
-    const dayOfYear = Math.floor(diff / (24 * 60 * 60 * 1000));
-    const quote = QUOTES[dayOfYear % QUOTES.length];
-
-    $("#quote-text").text(`"${quote[getLanguage()]}"`);
-    $("#quote-author").text(`— ${quote.author}`);
-}
-
-// Shows/hides the whole #today-container: only worth showing if at least one of its three parts
-// is actually configured/enabled.
-function updateTodayCardVisibility(settings) {
-    const anyEnabled = !!(settings.weatherLocation || "").trim()
-        || !!(settings.holidayCountry || "").trim()
-        || settings.quoteEnabled !== false;
-    $("#today-container").toggleClass("feature-hidden", !anyEnabled);
-}
-
-// ---------------------------------------------------------------------------------------------
-// World clock — extra timezones next to the local time, fully offline (Intl.DateTimeFormat)
+// World clock zone table — fully offline (Intl.DateTimeFormat); the actual rendering lives in
+// src/stores.js's refreshWorldClockSlot(), driven by the 1-second clock tick.
 // ---------------------------------------------------------------------------------------------
 
 // Labels are deliberately the common international (English) city names in both UI languages —
@@ -267,30 +138,3 @@ const WORLD_CLOCK_ZONES = {
     sydney: { label: "Sydney", zone: "Australia/Sydney" },
     auckland: { label: "Auckland", zone: "Pacific/Auckland" }
 };
-
-// Called both on settings load/save and from the existing 1-second clock interval in
-// src/dashboard.js (loadClock()), so the extra timezones tick along with the main clock.
-function loadWorldClock(settings) {
-    renderWorldClockSlot("#world-clock-1", settings.worldClock1);
-    renderWorldClockSlot("#world-clock-2", settings.worldClock2);
-}
-
-function renderWorldClockSlot(selector, zoneKey) {
-    const zone = WORLD_CLOCK_ZONES[zoneKey];
-    const el = $(selector);
-
-    if (!zone) {
-        el.addClass("feature-hidden").empty();
-        return;
-    }
-
-    // Hardcoded to "de-DE" (24h format) to match the main clock (getClockTime() in
-    // src/dashboard.js), which always shows 24h regardless of the UI language.
-    const time = new Intl.DateTimeFormat("de-DE", {
-        timeZone: zone.zone,
-        hour: "2-digit",
-        minute: "2-digit"
-    }).format(new Date());
-
-    el.removeClass("feature-hidden").text(`${zone.label} · ${time}`);
-}

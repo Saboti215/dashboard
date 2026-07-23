@@ -9,7 +9,9 @@ a quote of the day, a world clock, and, well, an actual clock — all styled as 
 glass-morphism dashboard.
 
 Everything is configured **inside the app** through the Settings modal (the gear icon, top right).
-There is no config file to edit and no build step — it's plain HTML/CSS/JS plus jQuery.
+There is no config file to edit and no build step — it's plain HTML/CSS/JS plus Alpine.js (the
+CSP-compliant build, required by Manifest V3's default `script-src 'self'` policy) for reactive
+state and declarative bindings.
 
 ## Features
 

@@ -4,25 +4,34 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta charset="utf-8"/>
         <link rel="shortcut icon" href="assets/dashboard.svg">
-        <script src="./src/jquery-3.5.1.min.js"></script>
-        <script src="./src/jquery-ui/jquery-ui.min.js"></script>
         <script src="./src/i18n.js"></script>
         <script src="./src/pomodoro-logic.js"></script>
-        <script src="./src/pomodoro-ui.js"></script>
         <script src="./src/quotes-data.js"></script>
         <script src="./src/extras.js"></script>
+        <script src="./src/stores.js"></script>
+        <script src="./src/pomodoro-ui.js"></script>
         <script src="./src/dashboard.js"></script>
         <link rel="stylesheet" href="src/dashboard.css">
         <title>Dashboard</title>
+        <!-- Alpine's CSP-compliant build — required because this extension relies on Manifest
+             V3's default script-src 'self' CSP (no custom content_security_policy in
+             manifest.json), which blocks the regular Alpine build's use of new Function(). Must
+             stay the LAST script tag: Alpine.data()/Alpine.store() registration happens inside
+             alpine:init listeners above, which Alpine dispatches during its own auto-start.
+             "defer" is required since all scripts sit in <head>: it delays Alpine until the whole
+             document (including <body>) has been parsed, while still running before
+             DOMContentLoaded and after every preceding (non-deferred) script above has already
+             registered its alpine:init listener. -->
+        <script defer src="./src/alpine-csp.min.js"></script>
     </head>
-    <body>
+    <body x-data="dashboardRoot" x-cloak x-on:keydown.escape.window="closeAllModals">
         <!-- Background Overlay for modern aesthetic -->
         <div id="bg-overlay"></div>
 
-        <div id="dashboard">
+        <div id="dashboard" x-bind:class="$store.dashboard.dashboardGridClass">
             <!-- Left Side: Calendar. Hidden by loadCalendar() until a calendar embed is configured
                  in Settings. -->
-            <div class="container" id="calendar-container">
+            <div class="container" id="calendar-container" x-bind:class="$store.dashboard.calendarContainerClass">
                 <a href="https://calendar.google.com/calendar/b/0/r" target="_blank" class="container-header-link">
                     <div class="head">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="head-icon">
@@ -31,7 +40,7 @@
                         <span data-i18n="widgets.calendar">Kalender</span>
                     </div>
                 </a>
-                <div class="content" id="calendar-wrapper">
+                <div class="content" id="calendar-wrapper" x-html="$store.dashboard.calendarHtml">
                 </div>
             </div>
 
@@ -41,15 +50,15 @@
                 <div class="container clock-container">
                     <div class="content" id="clock-wrapper">
                         <div id="clock">
-                            <div id="clock-time">--:--:--</div>
-                            <div id="clock-date">...</div>
+                            <div id="clock-time" x-text="$store.dashboard.clock.time">--:--:--</div>
+                            <div id="clock-date" x-text="$store.dashboard.clock.date">...</div>
                             <!-- Shown only once a name is set in Settings -->
-                            <div id="greeting"></div>
+                            <div id="greeting" x-show="$store.dashboard.hasGreeting" x-text="$store.dashboard.greetingText"></div>
                             <!-- Extra timezones, configured in Settings -> World clock; hidden via
                                  feature-hidden when a slot isn't set to a zone. -->
                             <div class="world-clock">
-                                <div id="world-clock-1" class="feature-hidden"></div>
-                                <div id="world-clock-2" class="feature-hidden"></div>
+                                <div id="world-clock-1" class="feature-hidden" x-bind:class="$store.dashboard.worldClock1Class" x-text="$store.dashboard.worldClock1Text"></div>
+                                <div id="world-clock-2" class="feature-hidden" x-bind:class="$store.dashboard.worldClock2Class" x-text="$store.dashboard.worldClock2Text"></div>
                             </div>
                         </div>
                     </div>
@@ -58,13 +67,13 @@
                 <!-- Search Widget: engine is configurable in Settings -->
                 <div class="container" id="search-container">
                     <div class="content" id="search-wrapper">
-                        <form id="search-form" action="https://search.brave.com/search" method="get">
+                        <form id="search-form" action="https://search.brave.com/search" method="get" x-bind:action="$store.dashboard.searchAction">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" id="search-icon">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
                             </svg>
-                            <input type="search" name="q" id="search-input" autofocus autocomplete="off">
+                            <input type="search" name="q" id="search-input" autofocus autocomplete="off" x-ref="searchInput" x-bind:name="$store.dashboard.searchParam" x-bind:placeholder="$store.dashboard.searchPlaceholder">
                         </form>
-                        <a id="ai-btn" href="https://gemini.google.com/app" data-i18n-title="ai.title" title="Neuer KI-Chat">
+                        <a id="ai-btn" href="https://gemini.google.com/app" data-i18n-title="ai.title" title="Neuer KI-Chat" x-bind:href="$store.dashboard.aiHref">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l1.912 5.813L20 10.5l-6.088 1.687L12 18l-1.912-5.813L4 10.5l6.088-1.687L12 3z" />
                             </svg>
@@ -81,13 +90,23 @@
                         <span data-i18n="widgets.bookmarks">Lesezeichen</span>
                     </div>
                     <div class="content" id="apps-wrapper">
+                        <template x-for="cat in $store.dashboard.bookmarkCategories" x-bind:key="cat.title">
+                            <div class="app-category">
+                                <div class="category-title" x-text="cat.title"></div>
+                                <div class="app-grid">
+                                    <template x-for="link in cat.links" x-bind:key="link.href">
+                                        <a x-bind:href="link.href" x-bind:data-name="link.name" x-bind:style="link.style"></a>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </div>
 
                 <!-- "Today" card: weather, public holiday, quote of the day. Each row is toggled
                      independently in Settings; the whole card hides itself (src/extras.js) when
                      none of the three are configured/enabled. -->
-                <div class="container" id="today-container">
+                <div class="container" id="today-container" x-bind:class="$store.dashboard.todayContainerClass">
                     <div class="head">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="head-icon">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2zM8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h.01" />
@@ -95,27 +114,27 @@
                         <span data-i18n="widgets.today">Heute</span>
                     </div>
                     <div class="content" id="today-wrapper">
-                        <div class="today-row" id="weather-widget">
-                            <span id="weather-icon" class="today-icon"></span>
-                            <span id="weather-text"></span>
+                        <div class="today-row" id="weather-widget" x-bind:class="$store.dashboard.weatherWidgetClass">
+                            <span id="weather-icon" class="today-icon" x-html="$store.dashboard.weatherIconHtml"></span>
+                            <span id="weather-text" x-text="$store.dashboard.weatherText"></span>
                         </div>
-                        <div class="today-row" id="holiday-widget">
+                        <div class="today-row" id="holiday-widget" x-bind:class="$store.dashboard.holidayWidgetClass">
                             <span class="today-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </span>
-                            <span id="holiday-text"></span>
+                            <span id="holiday-text" x-text="$store.dashboard.holidayText"></span>
                         </div>
-                        <div class="today-row" id="quote-widget">
+                        <div class="today-row" id="quote-widget" x-bind:class="$store.dashboard.quoteWidgetClass">
                             <span class="today-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-9 8l2.5-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-6.5L11 20z" />
                                 </svg>
                             </span>
                             <div>
-                                <div id="quote-text"></div>
-                                <div id="quote-author"></div>
+                                <div id="quote-text" x-text="$store.dashboard.quoteText"></div>
+                                <div id="quote-author" x-text="$store.dashboard.quoteAuthor"></div>
                             </div>
                         </div>
                     </div>
@@ -123,8 +142,8 @@
             </div>
         </div>
 
-        <!-- Floating Music Player Widget. Removed entirely by loadRadio() when disabled in Settings. -->
-        <div id="radio-panel">
+        <!-- Floating Music Player Widget. Hidden entirely (feature-hidden) when disabled in Settings. -->
+        <div id="radio-panel" x-bind:class="$store.dashboard.radioClass">
             <div class="radio-header">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="radio-icon">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
@@ -132,11 +151,11 @@
                 <span data-i18n="radio.panelTitle">TuneIn Radio</span>
             </div>
             <div class="radio-content">
-                <iframe id="radio-frame" scrolling="no" frameborder="no"></iframe>
+                <iframe id="radio-frame" scrolling="no" frameborder="no" x-bind:src="$store.dashboard.radioFrameSrc"></iframe>
             </div>
         </div>
 
-        <button id="radio-toggle" data-i18n-title="radio.toggleTitle" title="Radio Player">
+        <button id="radio-toggle" data-i18n-title="radio.toggleTitle" title="Radio Player" x-bind:class="$store.dashboard.radioClass" x-on:click="toggleRadioPanel">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
@@ -145,28 +164,28 @@
         <!-- Floating Pomodoro Timer Widget. The background service worker (src/background.js) is
              the actual timekeeper, so this keeps counting/notifying even while this panel is
              closed or the tab isn't open at all; this is just the view + remote control. -->
-        <div id="pomodoro-panel">
+        <div id="pomodoro-panel" x-bind:class="$store.dashboard.pomodoroPanelClass">
             <div class="pomodoro-header">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="pomodoro-icon">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span id="pomodoro-phase">Arbeiten</span>
-                <button type="button" id="pomodoro-open-window" data-i18n-title="pomodoro.openWindow" title="In eigenem Fenster öffnen">
+                <span id="pomodoro-phase" x-text="$store.dashboard.pomodoro.phaseLabel">Arbeiten</span>
+                <button type="button" id="pomodoro-open-window" data-i18n-title="pomodoro.openWindow" title="In eigenem Fenster öffnen" x-on:click="openPomodoroWindow">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                 </button>
             </div>
-            <div id="pomodoro-time">25:00</div>
-            <div id="pomodoro-round"></div>
+            <div id="pomodoro-time" x-text="$store.dashboard.pomodoro.timeText">25:00</div>
+            <div id="pomodoro-round" x-text="$store.dashboard.pomodoro.roundLabel"></div>
             <div class="pomodoro-controls">
-                <button type="button" id="pomodoro-play-pause" class="btn btn-primary">Start</button>
-                <button type="button" id="pomodoro-skip" data-i18n-title="pomodoro.skip" title="Überspringen">
+                <button type="button" id="pomodoro-play-pause" class="btn btn-primary" x-bind:class="$store.dashboard.pomodoroPlayPauseClass" x-text="$store.dashboard.pomodoro.playPauseLabel" x-on:click="playPause">Start</button>
+                <button type="button" id="pomodoro-skip" data-i18n-title="pomodoro.skip" title="Überspringen" x-on:click="skip">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                     </svg>
                 </button>
-                <button type="button" id="pomodoro-reset" data-i18n-title="pomodoro.reset" title="Zurücksetzen">
+                <button type="button" id="pomodoro-reset" data-i18n-title="pomodoro.reset" title="Zurücksetzen" x-on:click="reset">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
@@ -174,24 +193,41 @@
             </div>
         </div>
 
-        <button id="pomodoro-toggle" data-i18n-title="pomodoro.toggleTitle" title="Pomodoro-Timer">
+        <button id="pomodoro-toggle" data-i18n-title="pomodoro.toggleTitle" title="Pomodoro-Timer" x-bind:class="$store.dashboard.pomodoroToggleClass" x-on:click="togglePomodoroPanel">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span id="pomodoro-badge"></span>
+            <span id="pomodoro-badge" x-bind:class="$store.dashboard.pomodoroBadgeClass" x-text="$store.dashboard.pomodoro.timeText"></span>
         </button>
 
-        <!-- Meeting Container Placeholder (will be animated in by JS). Removed entirely by
-             loadMeetings() when disabled in Settings. -->
-        <div id="meeting-portal"></div>
+        <!-- Meeting Container Placeholder. Hidden entirely (feature-hidden) when disabled in
+             Settings; ".visible" + the card inside only appear while a meeting is active. -->
+        <div id="meeting-portal" x-bind:class="$store.dashboard.meetingPortalClass">
+            <template x-if="$store.dashboard.activeMeeting">
+                <div class="meeting-card" id="active-meeting">
+                    <div class="meeting-header">
+                        <span class="pulse-dot"></span>
+                        <span class="meeting-badge" x-text="$store.dashboard.activeMeetingBadge"></span>
+                    </div>
+                    <div class="meeting-title" x-text="$store.dashboard.activeMeeting.name"></div>
+                    <div class="meeting-time" x-text="$store.dashboard.activeMeetingTime"></div>
+                    <button class="meeting-btn" id="join-meeting-btn" x-on:click="joinActiveMeeting">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="btn-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <span x-text="$store.dashboard.joinMeetingLabel"></span>
+                    </button>
+                </div>
+            </template>
+        </div>
 
-        <button id="meetings-toggle" data-i18n-title="meetings.toggleTitle" title="Meetings verwalten">
+        <button id="meetings-toggle" data-i18n-title="meetings.toggleTitle" title="Meetings verwalten" x-bind:class="$store.dashboard.meetingsToggleClass" x-on:click="openMeetings">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
         </button>
 
-        <button id="settings-toggle" data-i18n-title="settings.toggleTitle" title="Einstellungen">
+        <button id="settings-toggle" data-i18n-title="settings.toggleTitle" title="Einstellungen" x-on:click="openSettings">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -199,66 +235,85 @@
         </button>
 
         <!-- Meetings Management Modal -->
-        <div class="modal" id="meetings-modal">
-            <div class="modal-backdrop"></div>
+        <div class="modal" id="meetings-modal" x-bind:class="$store.dashboard.meetingsModalClass">
+            <div class="modal-backdrop" x-on:click="closeMeetings"></div>
             <div class="modal-card">
                 <div class="modal-header">
                     <span data-i18n="meetings.modalTitle">Meetings verwalten</span>
-                    <button type="button" class="modal-close" data-i18n-title="close" title="Schließen">&times;</button>
+                    <button type="button" class="modal-close" data-i18n-title="close" title="Schließen" x-on:click="closeMeetings">&times;</button>
                 </div>
 
-                <div id="meetings-list"></div>
+                <div id="meetings-list">
+                    <div class="meetings-empty" x-show="$store.dashboard.noMeetings" data-i18n="meetings.empty"></div>
+                    <template x-for="meeting in $store.dashboard.meetingRows" x-bind:key="meeting.id">
+                        <div class="meeting-row">
+                            <div class="meeting-row-info">
+                                <div class="meeting-row-name" x-text="meeting.name"></div>
+                                <div class="meeting-row-meta" x-text="meeting.metaText"></div>
+                            </div>
+                            <div class="meeting-row-actions">
+                                <button type="button" x-bind:data-edit="meeting.id" x-bind:title="meeting.editTitle" x-on:click="editMeeting">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+                                <button type="button" x-bind:data-delete="meeting.id" x-bind:title="meeting.deleteTitle" x-on:click="deleteMeetingRow">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
 
-                <form id="meeting-form" class="modal-form">
-                    <input type="hidden" id="meeting-id">
-                    <input type="hidden" id="meeting-recurrence" value="weekly">
-
+                <form id="meeting-form" class="modal-form" x-on:submit.prevent="submitMeetingForm">
                     <div class="form-row">
                         <label for="meeting-name" data-i18n="meetings.form.name">Name</label>
-                        <input type="text" id="meeting-name" required>
+                        <input type="text" id="meeting-name" required x-ref="meetingName" data-field="name" x-bind:value="meetingForm.name" x-on:input="updateMeetingField">
                     </div>
 
                     <div class="form-row form-row-split">
                         <div>
                             <label for="meeting-type" data-i18n="meetings.form.type">Typ</label>
-                            <select id="meeting-type">
+                            <select id="meeting-type" data-field="type" x-bind:value="meetingForm.type" x-on:change="updateMeetingField">
                                 <option value="zoom">Zoom</option>
                                 <option value="teams">MS Teams</option>
                             </select>
                         </div>
                         <div>
                             <label for="meeting-password" data-i18n="meetings.form.password">Passwort (optional)</label>
-                            <input type="text" id="meeting-password" autocomplete="off">
+                            <input type="text" id="meeting-password" autocomplete="off" data-field="password" x-bind:value="meetingForm.password" x-on:input="updateMeetingField">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <label for="meeting-link" data-i18n="meetings.form.link">Link</label>
-                        <input type="url" id="meeting-link" placeholder="https://..." required>
+                        <input type="url" id="meeting-link" placeholder="https://..." required data-field="link" x-bind:value="meetingForm.link" x-on:input="updateMeetingField">
                     </div>
 
                     <div class="form-row form-row-split">
                         <div>
                             <label for="meeting-start" data-i18n="meetings.form.start">Start</label>
-                            <input type="time" id="meeting-start" required>
+                            <input type="time" id="meeting-start" required data-field="start_time" x-bind:value="meetingForm.start_time" x-on:input="updateMeetingField">
                         </div>
                         <div>
                             <label for="meeting-end" data-i18n="meetings.form.end">Ende</label>
-                            <input type="time" id="meeting-end" required>
+                            <input type="time" id="meeting-end" required data-field="end_time" x-bind:value="meetingForm.end_time" x-on:input="updateMeetingField">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <label data-i18n="meetings.form.recurrence">Wiederholung</label>
                         <div class="segmented" id="recurrence-toggle">
-                            <button type="button" data-value="weekly" class="active" data-i18n="meetings.form.weekly">Wöchentlich</button>
-                            <button type="button" data-value="once" data-i18n="meetings.form.once">Einmalig</button>
+                            <button type="button" data-i18n="meetings.form.weekly" x-bind:class="weeklyButtonClass" x-on:click="setRecurrenceWeekly">Wöchentlich</button>
+                            <button type="button" data-i18n="meetings.form.once" x-bind:class="onceButtonClass" x-on:click="setRecurrenceOnce">Einmalig</button>
                         </div>
                     </div>
 
-                    <div class="form-row" id="weekday-row">
+                    <div class="form-row" id="weekday-row" x-show="isWeekly">
                         <label for="meeting-weekday" data-i18n="meetings.form.weekday">Wochentag</label>
-                        <select id="meeting-weekday">
+                        <select id="meeting-weekday" data-field="weekday" data-number x-bind:value="meetingForm.weekday" x-on:change="updateMeetingField">
                             <option value="1" data-i18n="weekdays.1">Montag</option>
                             <option value="2" data-i18n="weekdays.2">Dienstag</option>
                             <option value="3" data-i18n="weekdays.3">Mittwoch</option>
@@ -269,13 +324,13 @@
                         </select>
                     </div>
 
-                    <div class="form-row" id="date-row" style="display: none;">
+                    <div class="form-row" id="date-row" x-show="isOnce">
                         <label for="meeting-date" data-i18n="meetings.form.date">Datum</label>
-                        <input type="date" id="meeting-date">
+                        <input type="date" id="meeting-date" data-field="date" x-bind:value="meetingForm.date" x-on:input="updateMeetingField">
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" id="meeting-form-cancel" class="btn btn-secondary" data-i18n="meetings.form.cancel">Neu / Zurücksetzen</button>
+                        <button type="button" id="meeting-form-cancel" class="btn btn-secondary" data-i18n="meetings.form.cancel" x-on:click="cancelMeetingForm">Neu / Zurücksetzen</button>
                         <button type="submit" id="meeting-form-submit" class="btn btn-primary" data-i18n="meetings.form.save">Speichern</button>
                     </div>
                 </form>
@@ -283,21 +338,21 @@
         </div>
 
         <!-- Settings Modal: the single place to configure this dashboard, no file editing required -->
-        <div class="modal" id="settings-modal">
-            <div class="modal-backdrop"></div>
+        <div class="modal" id="settings-modal" x-bind:class="$store.dashboard.settingsModalClass">
+            <div class="modal-backdrop" x-on:click="cancelSettings"></div>
             <div class="modal-card">
                 <div class="modal-header">
                     <span data-i18n="settings.modalTitle">Einstellungen</span>
-                    <button type="button" class="modal-close" data-i18n-title="close" title="Schließen">&times;</button>
+                    <button type="button" class="modal-close" data-i18n-title="close" title="Schließen" x-on:click="cancelSettings">&times;</button>
                 </div>
 
-                <form id="settings-form" class="modal-form">
+                <form id="settings-form" class="modal-form" x-on:submit.prevent="submitSettings">
                     <div class="settings-section">
                         <h3 class="settings-section-title" data-i18n="settings.section.general">Allgemein</h3>
 
                         <div class="form-row">
                             <label for="settings-language" data-i18n="settings.language">Sprache</label>
-                            <select id="settings-language">
+                            <select id="settings-language" data-field="language" x-bind:value="settingsForm.language" x-on:change="updateSettingsField">
                                 <option value="de">Deutsch</option>
                                 <option value="en">English</option>
                             </select>
@@ -305,12 +360,12 @@
 
                         <div class="form-row">
                             <label for="settings-user-name" data-i18n="settings.userName">Dein Name</label>
-                            <input type="text" id="settings-user-name" autocomplete="off">
+                            <input type="text" id="settings-user-name" autocomplete="off" data-field="userName" x-bind:value="settingsForm.userName" x-on:input="updateSettingsField">
                         </div>
 
                         <div class="form-row">
                             <label for="settings-accent-color" data-i18n="settings.accentColor">Akzentfarbe</label>
-                            <input type="color" id="settings-accent-color">
+                            <input type="color" id="settings-accent-color" data-field="accentColor" x-bind:value="settingsForm.accentColor" x-on:input="updateSettingsField">
                         </div>
 
                         <div class="form-row">
@@ -323,9 +378,9 @@
                                 </button>
                             </label>
                             <div class="form-row-file">
-                                <img id="settings-background-preview" alt="">
-                                <input type="file" id="settings-background-file" accept="image/*">
-                                <button type="button" id="settings-background-remove" class="btn btn-secondary btn-small" data-i18n="settings.backgroundRemove">Entfernen</button>
+                                <img id="settings-background-preview" alt="" x-bind:class="previewVisibleClass" x-bind:src="previewSrc">
+                                <input type="file" id="settings-background-file" accept="image/*" x-ref="backgroundFile" x-on:change="onBackgroundFileChange">
+                                <button type="button" id="settings-background-remove" class="btn btn-secondary btn-small" data-i18n="settings.backgroundRemove" x-on:click="removeBackgroundImage">Entfernen</button>
                             </div>
                         </div>
                     </div>
@@ -335,7 +390,7 @@
 
                         <div class="form-row">
                             <label for="settings-search-engine" data-i18n="settings.searchEngine">Suchmaschine</label>
-                            <select id="settings-search-engine">
+                            <select id="settings-search-engine" data-field="searchEngine" x-bind:value="settingsForm.searchEngine" x-on:change="updateSettingsField">
                                 <option value="brave">Brave</option>
                                 <option value="google">Google</option>
                                 <option value="duckduckgo">DuckDuckGo</option>
@@ -347,7 +402,7 @@
 
                         <div class="form-row">
                             <label for="settings-ai-assistant" data-i18n="settings.aiAssistant">KI-Assistent</label>
-                            <select id="settings-ai-assistant">
+                            <select id="settings-ai-assistant" data-field="aiAssistant" x-bind:value="settingsForm.aiAssistant" x-on:change="updateSettingsField">
                                 <option value="gemini">Gemini</option>
                                 <option value="chatgpt">ChatGPT</option>
                                 <option value="claude">Claude</option>
@@ -369,7 +424,7 @@
                                     </svg>
                                 </button>
                             </label>
-                            <textarea id="settings-calendar-iframe" rows="3" placeholder="<iframe src=&quot;https://calendar.google.com/...&quot; ...></iframe>"></textarea>
+                            <textarea id="settings-calendar-iframe" rows="3" placeholder="<iframe src=&quot;https://calendar.google.com/...&quot; ...></iframe>" data-field="calendarIframe" x-bind:value="settingsForm.calendarIframe" x-on:input="updateSettingsField"></textarea>
                         </div>
                     </div>
 
@@ -385,7 +440,7 @@
                                     </svg>
                                 </button>
                             </label>
-                            <input type="text" id="settings-weather-location" placeholder="Berlin" autocomplete="off">
+                            <input type="text" id="settings-weather-location" placeholder="Berlin" autocomplete="off" data-field="weatherLocation" x-bind:value="settingsForm.weatherLocation" x-on:input="updateSettingsField">
                         </div>
                     </div>
 
@@ -401,7 +456,7 @@
                                     </svg>
                                 </button>
                             </label>
-                            <input type="text" id="settings-holiday-country" placeholder="DE" maxlength="2" autocomplete="off">
+                            <input type="text" id="settings-holiday-country" placeholder="DE" maxlength="2" autocomplete="off" data-field="holidayCountry" x-bind:value="settingsForm.holidayCountry" x-on:input="updateSettingsField">
                         </div>
                     </div>
 
@@ -409,7 +464,7 @@
                         <h3 class="settings-section-title" data-i18n="settings.section.quote">Zitat des Tages</h3>
 
                         <div class="form-row form-row-checkbox">
-                            <input type="checkbox" id="settings-quote-enabled">
+                            <input type="checkbox" id="settings-quote-enabled" data-field="quoteEnabled" x-bind:checked="settingsForm.quoteEnabled" x-on:change="updateSettingsField">
                             <label for="settings-quote-enabled" data-i18n="settings.quoteEnabled">Zitat des Tages anzeigen</label>
                         </div>
                     </div>
@@ -420,7 +475,7 @@
                         <div class="form-row form-row-split">
                             <div>
                                 <label for="settings-world-clock-1" data-i18n="settings.worldClock1">Weltuhr 1</label>
-                                <select id="settings-world-clock-1">
+                                <select id="settings-world-clock-1" data-field="worldClock1" x-bind:value="settingsForm.worldClock1" x-on:change="updateSettingsField">
                                     <option value="" data-i18n="settings.worldClockNone">— Keine —</option>
                                     <option value="los_angeles">Los Angeles</option>
                                     <option value="new_york">New York</option>
@@ -441,7 +496,7 @@
                             </div>
                             <div>
                                 <label for="settings-world-clock-2" data-i18n="settings.worldClock2">Weltuhr 2</label>
-                                <select id="settings-world-clock-2">
+                                <select id="settings-world-clock-2" data-field="worldClock2" x-bind:value="settingsForm.worldClock2" x-on:change="updateSettingsField">
                                     <option value="" data-i18n="settings.worldClockNone">— Keine —</option>
                                     <option value="los_angeles">Los Angeles</option>
                                     <option value="new_york">New York</option>
@@ -467,11 +522,11 @@
                         <h3 class="settings-section-title" data-i18n="settings.section.radio">Radio</h3>
 
                         <div class="form-row form-row-checkbox">
-                            <input type="checkbox" id="settings-radio-enabled">
+                            <input type="checkbox" id="settings-radio-enabled" data-field="radioEnabled" x-bind:checked="settingsForm.radioEnabled" x-on:change="updateSettingsField">
                             <label for="settings-radio-enabled" data-i18n="settings.radioEnabled">Radio-Player anzeigen</label>
                         </div>
 
-                        <div class="settings-subfields" id="settings-radio-details">
+                        <div class="settings-subfields" id="settings-radio-details" x-show="settingsForm.radioEnabled">
                             <div class="form-row">
                                 <label for="settings-tunein-id">
                                     <span data-i18n="settings.tuneInId">TuneIn Sender-ID</span>
@@ -481,7 +536,7 @@
                                         </svg>
                                     </button>
                                 </label>
-                                <input type="text" id="settings-tunein-id" placeholder="s12345">
+                                <input type="text" id="settings-tunein-id" placeholder="s12345" data-field="tuneInId" x-bind:value="settingsForm.tuneInId" x-on:input="updateSettingsField">
                             </div>
                         </div>
                     </div>
@@ -490,7 +545,7 @@
                         <h3 class="settings-section-title" data-i18n="settings.section.meetings">Meetings</h3>
 
                         <div class="form-row form-row-checkbox">
-                            <input type="checkbox" id="settings-meetings-enabled">
+                            <input type="checkbox" id="settings-meetings-enabled" data-field="meetingsEnabled" x-bind:checked="settingsForm.meetingsEnabled" x-on:change="updateSettingsField">
                             <label for="settings-meetings-enabled" data-i18n="settings.meetingsEnabled">Meeting Quick-Join anzeigen</label>
                         </div>
                     </div>
@@ -499,37 +554,37 @@
                         <h3 class="settings-section-title" data-i18n="settings.section.pomodoro">Pomodoro</h3>
 
                         <div class="form-row form-row-checkbox">
-                            <input type="checkbox" id="settings-pomodoro-enabled">
+                            <input type="checkbox" id="settings-pomodoro-enabled" data-field="pomodoroEnabled" x-bind:checked="settingsForm.pomodoroEnabled" x-on:change="updateSettingsField">
                             <label for="settings-pomodoro-enabled" data-i18n="settings.pomodoroEnabled">Pomodoro-Timer anzeigen</label>
                         </div>
 
-                        <div class="settings-subfields" id="settings-pomodoro-details">
+                        <div class="settings-subfields" id="settings-pomodoro-details" x-show="settingsForm.pomodoroEnabled">
                             <div class="form-row form-row-split">
                                 <div>
                                     <label for="settings-pomodoro-work" data-i18n="settings.pomodoroWork">Arbeitsdauer (Min.)</label>
-                                    <input type="number" id="settings-pomodoro-work" min="1" max="180">
+                                    <input type="number" id="settings-pomodoro-work" min="1" max="180" data-field="pomodoroWorkMinutes" x-bind:value="settingsForm.pomodoroWorkMinutes" x-on:input="updateSettingsField">
                                 </div>
                                 <div>
                                     <label for="settings-pomodoro-short-break" data-i18n="settings.pomodoroShortBreak">Kurze Pause (Min.)</label>
-                                    <input type="number" id="settings-pomodoro-short-break" min="1" max="180">
+                                    <input type="number" id="settings-pomodoro-short-break" min="1" max="180" data-field="pomodoroShortBreakMinutes" x-bind:value="settingsForm.pomodoroShortBreakMinutes" x-on:input="updateSettingsField">
                                 </div>
                             </div>
 
                             <div class="form-row form-row-split">
                                 <div>
                                     <label for="settings-pomodoro-long-break" data-i18n="settings.pomodoroLongBreak">Lange Pause (Min.)</label>
-                                    <input type="number" id="settings-pomodoro-long-break" min="1" max="180">
+                                    <input type="number" id="settings-pomodoro-long-break" min="1" max="180" data-field="pomodoroLongBreakMinutes" x-bind:value="settingsForm.pomodoroLongBreakMinutes" x-on:input="updateSettingsField">
                                 </div>
                                 <div>
                                     <label for="settings-pomodoro-rounds" data-i18n="settings.pomodoroRounds">Runden bis lange Pause</label>
-                                    <input type="number" id="settings-pomodoro-rounds" min="1" max="12">
+                                    <input type="number" id="settings-pomodoro-rounds" min="1" max="12" data-field="pomodoroRoundsUntilLongBreak" x-bind:value="settingsForm.pomodoroRoundsUntilLongBreak" x-on:input="updateSettingsField">
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" id="settings-form-cancel" class="btn btn-secondary" data-i18n="settings.cancel">Abbrechen</button>
+                        <button type="button" id="settings-form-cancel" class="btn btn-secondary" data-i18n="settings.cancel" x-on:click="cancelSettings">Abbrechen</button>
                         <button type="submit" id="settings-form-submit" class="btn btn-primary" data-i18n="settings.save">Speichern</button>
                     </div>
                 </form>
