@@ -8,6 +8,10 @@
         <script src="./src/pomodoro-logic.js"></script>
         <script src="./src/quotes-data.js"></script>
         <script src="./src/extras.js"></script>
+        <!-- Vendored canvas-confetti (https://github.com/catdad/canvas-confetti), used by the
+             "Top 3 tasks" widget (src/dashboard.js's taskWidget) when all three tasks are checked
+             off. Exposes a single global: window.confetti. -->
+        <script src="./src/canvas-confetti.min.js"></script>
         <script src="./src/calc.js"></script>
         <script src="./src/stores.js"></script>
         <script src="./src/pomodoro-ui.js"></script>
@@ -159,29 +163,49 @@
                         </svg>
                         <span data-i18n="widgets.today">Heute</span>
                     </div>
-                    <div class="content" id="today-wrapper">
-                        <div class="today-row" id="weather-widget" x-bind:class="$store.dashboard.weatherWidgetClass">
-                            <span id="weather-icon" class="today-icon" x-html="$store.dashboard.weatherIconHtml"></span>
-                            <span id="weather-text" x-text="$store.dashboard.weatherText"></span>
-                        </div>
-                        <div class="today-row" id="holiday-widget" x-bind:class="$store.dashboard.holidayWidgetClass">
-                            <span class="today-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </span>
-                            <span id="holiday-text" x-text="$store.dashboard.holidayText"></span>
-                        </div>
-                        <div class="today-row" id="quote-widget" x-bind:class="$store.dashboard.quoteWidgetClass">
-                            <span class="today-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-9 8l2.5-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-6.5L11 20z" />
-                                </svg>
-                            </span>
-                            <div>
-                                <div id="quote-text" x-text="$store.dashboard.quoteText"></div>
-                                <div id="quote-author" x-text="$store.dashboard.quoteAuthor"></div>
+                    <!-- Two-column layout once the tasks widget is enabled (see todayLayoutClass);
+                         a single flex column otherwise, unchanged from before. -->
+                    <div class="content" id="today-wrapper" x-bind:class="$store.dashboard.todayLayoutClass">
+                        <div id="today-left">
+                            <div class="today-row" id="weather-widget" x-bind:class="$store.dashboard.weatherWidgetClass">
+                                <span id="weather-icon" class="today-icon" x-html="$store.dashboard.weatherIconHtml"></span>
+                                <span id="weather-text" x-text="$store.dashboard.weatherText"></span>
                             </div>
+                            <div class="today-row" id="holiday-widget" x-bind:class="$store.dashboard.holidayWidgetClass">
+                                <span class="today-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </span>
+                                <span id="holiday-text" x-text="$store.dashboard.holidayText"></span>
+                            </div>
+                            <div class="today-row" id="quote-widget" x-bind:class="$store.dashboard.quoteWidgetClass">
+                                <span class="today-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h6m-9 8l2.5-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-6.5L11 20z" />
+                                    </svg>
+                                </span>
+                                <div>
+                                    <div id="quote-text" x-text="$store.dashboard.quoteText"></div>
+                                    <div id="quote-author" x-text="$store.dashboard.quoteAuthor"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- "Top 3 tasks" widget: today's top priorities. Own Alpine component
+                             (taskWidget, src/dashboard.js) since its state (task text/done, daily
+                             reset, confetti-on-completion) is unrelated to the rest of the store.
+                             Persisted under its own chrome.storage.sync key ("dailyTasks"), separate
+                             from the `settings` object — only whether this widget is SHOWN is a
+                             setting (tasksEnabled). -->
+                        <div id="today-tasks" x-data="taskWidget" x-bind:class="$store.dashboard.tasksWidgetClass">
+                            <div class="today-tasks-title" data-i18n="widgets.tasks">Fokus heute</div>
+                            <template x-for="(task, index) in tasks" x-bind:key="index">
+                                <div class="task-item">
+                                    <input type="checkbox" x-bind:checked="task.done" x-bind:data-index="index" x-on:change="toggleTask">
+                                    <input type="text" placeholder="Aufgabe ..." data-i18n-placeholder="tasks.placeholder" x-bind:value="task.text" x-bind:data-index="index" x-on:input="updateTaskText">
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -523,6 +547,15 @@
                         <div class="form-row form-row-checkbox">
                             <input type="checkbox" id="settings-quote-enabled" data-field="quoteEnabled" x-bind:checked="settingsForm.quoteEnabled" x-on:change="updateSettingsField">
                             <label for="settings-quote-enabled" data-i18n="settings.quoteEnabled">Zitat des Tages anzeigen</label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.tasks">Fokus heute</h3>
+
+                        <div class="form-row form-row-checkbox">
+                            <input type="checkbox" id="settings-tasks-enabled" data-field="tasksEnabled" x-bind:checked="settingsForm.tasksEnabled" x-on:change="updateSettingsField">
+                            <label for="settings-tasks-enabled" data-i18n="settings.tasksEnabled">Aufgaben-Widget anzeigen</label>
                         </div>
                     </div>
 

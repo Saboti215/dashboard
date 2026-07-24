@@ -616,6 +616,23 @@ body.zen-mode #dashboard.no-calendar .left-column {
     gap: 16px;
 }
 
+/* Tasks widget enabled (todayLayoutClass, stores.js): split the card into two columns — the
+   original weather/holiday/quote rows on the left (#today-left), the 3-task focus list on the
+   right (#today-tasks). Falls back to a single column below 640px (see the media query further
+   down) rather than squeezing two narrow columns into a phone-width card. */
+#today-wrapper.has-tasks {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 24px;
+}
+
+#today-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
 .today-row {
     display: flex;
     align-items: flex-start;
@@ -655,6 +672,71 @@ body.zen-mode #dashboard.no-calendar .left-column {
     font-size: 12px;
     color: var(--text-secondary);
     margin-top: 4px;
+}
+
+/* "Top 3 tasks" widget: today's top priorities, nested inside the "Today" card next to
+   #today-left once enabled (see #today-wrapper.has-tasks above). Separated from #today-left with
+   a thin divider rather than its own .container card, since it's still conceptually part of
+   "Today". */
+#today-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    padding-left: 24px;
+}
+
+.today-tasks-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.task-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: var(--accent-color);
+    cursor: pointer;
+}
+
+.task-item input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 6px 10px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.25s, background-color 0.25s;
+}
+
+.task-item input[type="text"]::placeholder {
+    color: var(--text-secondary);
+}
+
+.task-item input[type="text"]:focus {
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* Struck-through + dimmed once its checkbox is ticked — pure CSS, no extra Alpine class binding
+   needed. :has() is supported by every evergreen browser this Chrome-only extension targets. */
+.task-item:has(input[type="checkbox"]:checked) input[type="text"] {
+    text-decoration: line-through;
+    opacity: 0.55;
 }
 
 /* News card: latest headlines from the RSS/Atom feeds configured in Settings (src/extras.js /
@@ -1060,8 +1142,9 @@ body.zen-mode #dashboard.no-calendar .left-column {
     background: rgba(255, 255, 255, 0.08);
 }
 
-/* Floating overlay behavior — only on the dashboard page, not the standalone popup window */
-body:not(.pomodoro-window) #pomodoro-panel {
+/* Floating overlay behavior — only on the dashboard page, not the standalone popup window or the
+   toolbar popup (both render #pomodoro-panel as a plain static card instead). */
+body:not(.pomodoro-window):not(.popup-root) #pomodoro-panel {
     position: fixed;
     bottom: 95px;
     left: 50%;
@@ -1072,7 +1155,7 @@ body:not(.pomodoro-window) #pomodoro-panel {
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-body:not(.pomodoro-window) #pomodoro-panel.active {
+body:not(.pomodoro-window):not(.popup-root) #pomodoro-panel.active {
     opacity: 1;
     pointer-events: all;
     transform: translateX(-50%) translateY(0) scale(1);
@@ -1084,6 +1167,25 @@ body.pomodoro-window {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+}
+
+/* Toolbar popup (popup.html): own vertical stack (Pomodoro card, wellness toggles, dashboard
+   link), sized to its content instead of the 100vh viewport lock the base body rule uses
+   everywhere else — a browser action popup sizes itself to its content, and 100vh there measures
+   against Chrome's own popup-sizing pass rather than a real window/screen, which can otherwise
+   balloon the popup to full screen height. */
+body.popup-root {
+    width: 320px;
+    min-height: 0;
+    background-attachment: scroll;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#popup-open-dashboard {
+    width: 100%;
 }
 
 /* Floating Settings Button (top-right corner) */
@@ -1775,15 +1877,15 @@ body.zen-mode #settings-toggle {
         padding: 15px;
         gap: 15px;
     }
-    
+
     #clock-time {
         font-size: 40px;
     }
-    
+
     #calendar-container {
         height: 480px;
     }
-    
+
     #radio-panel {
         width: calc(100vw - 50px);
         right: 25px;
@@ -1791,6 +1893,19 @@ body.zen-mode #settings-toggle {
 
     .meeting-card {
         width: calc(100vw - 50px);
+    }
+
+    /* Not enough width for two columns in the "Today" card — stack tasks below the other rows
+       instead, with a horizontal divider replacing the vertical one. */
+    #today-wrapper.has-tasks {
+        grid-template-columns: 1fr;
+    }
+
+    #today-tasks {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 16px;
     }
 }
 

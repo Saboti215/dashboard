@@ -19,11 +19,15 @@ const TRANSLATIONS = {
             calendar: "Kalender",
             bookmarks: "Lesezeichen",
             today: "Heute",
-            news: "News"
+            news: "News",
+            tasks: "Fokus heute"
         },
         bookmarks: {
             general: "Allgemein",
             misc: "Sonstiges"
+        },
+        tasks: {
+            placeholder: "Aufgabe ..."
         },
         extras: {
             loading: "Lädt...",
@@ -64,6 +68,9 @@ const TRANSLATIONS = {
         },
         zen: {
             toggleTitle: "Zen-Modus"
+        },
+        popup: {
+            openDashboard: "Dashboard öffnen"
         },
         wellness: {
             water: {
@@ -152,6 +159,7 @@ const TRANSLATIONS = {
                 weather: "Wetter",
                 holidays: "Feiertage",
                 quote: "Zitat des Tages",
+                tasks: "Fokus heute",
                 rss: "News",
                 worldClock: "Weltuhr",
                 radio: "Radio",
@@ -174,6 +182,7 @@ const TRANSLATIONS = {
             holidayCountry: "Länder-Code",
             holidayHint: "Zweistelliger Ländercode, z. B. \"DE\" für Deutschland, \"AT\" für Österreich, \"CH\" für die Schweiz, \"US\" für die USA.",
             quoteEnabled: "Zitat des Tages anzeigen",
+            tasksEnabled: "Aufgaben-Widget anzeigen",
             rssEnabled: "News-Karte anzeigen",
             rssFeeds: "RSS-Feeds",
             rssHint: "Eine Feed-URL pro Zeile, z. B. https://www.tagesschau.de/xml/rss2/.",
@@ -202,11 +211,15 @@ const TRANSLATIONS = {
             calendar: "Calendar",
             bookmarks: "Bookmarks",
             today: "Today",
-            news: "News"
+            news: "News",
+            tasks: "Today's focus"
         },
         bookmarks: {
             general: "General",
             misc: "Other"
+        },
+        tasks: {
+            placeholder: "Task ..."
         },
         extras: {
             loading: "Loading...",
@@ -247,6 +260,9 @@ const TRANSLATIONS = {
         },
         zen: {
             toggleTitle: "Zen mode"
+        },
+        popup: {
+            openDashboard: "Open dashboard"
         },
         wellness: {
             water: {
@@ -335,6 +351,7 @@ const TRANSLATIONS = {
                 weather: "Weather",
                 holidays: "Holidays",
                 quote: "Quote of the day",
+                tasks: "Today's focus",
                 rss: "News",
                 worldClock: "World clock",
                 radio: "Radio",
@@ -357,6 +374,7 @@ const TRANSLATIONS = {
             holidayCountry: "Country code",
             holidayHint: "Two-letter country code, e.g. \"DE\" for Germany, \"AT\" for Austria, \"CH\" for Switzerland, \"US\" for the United States.",
             quoteEnabled: "Show quote of the day",
+            tasksEnabled: "Show tasks widget",
             rssEnabled: "Show news card",
             rssFeeds: "RSS feeds",
             rssHint: "One feed URL per line, e.g. https://www.tagesschau.de/xml/rss2/.",

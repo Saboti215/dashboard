@@ -110,6 +110,7 @@ function getDefaultSettings() {
         weatherLocation: "",
         holidayCountry: "",
         quoteEnabled: true,
+        tasksEnabled: true,
         rssEnabled: true,
         rssFeeds: "",
         worldClock1: "",
@@ -208,6 +209,9 @@ document.addEventListener("alpine:init", () => {
         get quoteVisible() {
             return this.settings.quoteEnabled !== false;
         },
+        get tasksVisible() {
+            return this.settings.tasksEnabled !== false;
+        },
         get rssFeedUrls() {
             return (this.settings.rssFeeds || "")
                 .split("\n")
@@ -218,7 +222,7 @@ document.addEventListener("alpine:init", () => {
             return this.settings.rssEnabled !== false && this.rssFeedUrls.length > 0;
         },
         get todayVisible() {
-            return this.weatherVisible || this.holidayVisible || this.quoteVisible;
+            return this.weatherVisible || this.holidayVisible || this.quoteVisible || this.tasksVisible;
         },
         get hasGreeting() {
             return !!this.settings.userName;
@@ -286,6 +290,14 @@ document.addEventListener("alpine:init", () => {
         },
         get quoteWidgetClass() {
             return { "feature-hidden": !this.quoteVisible };
+        },
+        get tasksWidgetClass() {
+            return { "feature-hidden": !this.tasksVisible };
+        },
+        // Splits the "Today" card into two columns (weather/holiday/quote left, tasks right) once
+        // the tasks widget is shown; a single flex column otherwise (see #today-wrapper CSS).
+        get todayLayoutClass() {
+            return { "has-tasks": this.tasksVisible };
         },
         get rssContainerClass() {
             return { "feature-hidden": !this.rssVisible };

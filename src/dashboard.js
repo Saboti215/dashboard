@@ -23,6 +23,123 @@ function defaultMeetingForm() {
     };
 }
 
+// -----------------------------------------------------------------------------------
+// Confetti (src/canvas-confetti.min.js), used by the "Top 3 tasks" widget below when all three
+// tasks are checked off. Built as our own confetti.create() instance (useWorker: false) instead of
+// calling the bundled confetti() global directly — that global lazily spins up a blob: Worker on
+// first use, which risks running into Manifest V3's default script-src 'self' CSP (no worker-src
+// override in manifest.json); a plain canvas + main-thread instance sidesteps that entirely. Built
+// lazily on first use (not at page load), so a session that never finishes the tasks never touches
+// the DOM for it.
+// -----------------------------------------------------------------------------------
+let taskConfettiInstance = null;
+
+function fireTaskConfetti() {
+    if (typeof confetti === "undefined") return; // library failed to load — degrade silently
+
+    if (!taskConfettiInstance) {
+        const canvas = document.createElement("canvas");
+        canvas.style.position = "fixed";
+        canvas.style.inset = "0";
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+        canvas.style.pointerEvents = "none";
+        canvas.style.zIndex = "1200"; // above modals (1100) so it's never hidden behind one
+        document.body.appendChild(canvas);
+        taskConfettiInstance = confetti.create(canvas, { resize: true, useWorker: false });
+    }
+
+    taskConfettiInstance({ particleCount: 120, spread: 70, origin: { y: 0.7 } });
+}
+
+// -----------------------------------------------------------------------------------
+// "Top 3 tasks" widget (index.html's #today-tasks, nested inside the "Today" card). A small,
+// self-contained Alpine component: its own chrome.storage.sync key ("dailyTasks"), separate from
+// the shared `settings` object, since it isn't part of the Settings modal's read-modify-write
+// round trip — only whether the widget is SHOWN is a setting (tasksEnabled, see stores.js).
+// -----------------------------------------------------------------------------------
+const TASK_COUNT = 3;
+
+function emptyTasks() {
+    return Array.from({ length: TASK_COUNT }, () => ({ text: "", done: false }));
+}
+
+// Local calendar date as "YYYY-MM-DD" (formatDateForStorage lives in src/stores.js, loaded before
+// this file) — used to detect "it's a new day" for the daily reset.
+function todayStamp() {
+    return formatDateForStorage(new Date());
+}
+
+document.addEventListener("alpine:init", () => {
+    Alpine.data("taskWidget", () => ({
+        tasks: emptyTasks(),
+        // Tracks the previous "all done" state so the watcher below only fires confetti on the
+        // false -> true transition (the 3rd box being checked) — not on every save, and not when a
+        // tab loads with an already-complete list.
+        prevAllDone: false,
+
+        init() {
+            if (typeof chrome === "undefined" || !chrome.storage) {
+                this.prevAllDone = this.allDone();
+                this.watchTasks();
+                return;
+            }
+
+            this.$store.dashboard.getSyncStorage().get({ dailyTasks: null }, data => {
+                const saved = data.dailyTasks;
+                const stamp = todayStamp();
+
+                if (saved && saved.lastUpdated === stamp && Array.isArray(saved.tasks)) {
+                    this.tasks = emptyTasks().map((task, i) => saved.tasks[i]
+                        ? { text: saved.tasks[i].text || "", done: !!saved.tasks[i].done }
+                        : task);
+                } else {
+                    // First run, or the saved list is from an earlier day — start the day fresh.
+                    this.tasks = emptyTasks();
+                    this.save();
+                }
+
+                this.prevAllDone = this.allDone();
+                this.watchTasks(); // registered only after the initial load, so it never fires on it
+            });
+        },
+
+        watchTasks() {
+            this.$watch("tasks", () => this.onTasksChanged());
+        },
+
+        updateTaskText(event) {
+            this.tasks[Number(event.target.dataset.index)].text = event.target.value;
+        },
+
+        toggleTask(event) {
+            this.tasks[Number(event.target.dataset.index)].done = event.target.checked;
+        },
+
+        allDone() {
+            return this.tasks.every(task => task.done);
+        },
+
+        onTasksChanged() {
+            this.save();
+
+            const done = this.allDone();
+            if (done && !this.prevAllDone) fireTaskConfetti();
+            this.prevAllDone = done;
+        },
+
+        save() {
+            if (typeof chrome === "undefined" || !chrome.storage) return;
+            this.$store.dashboard.getSyncStorage().set({
+                dailyTasks: {
+                    lastUpdated: todayStamp(),
+                    tasks: this.tasks.map(task => ({ text: task.text, done: task.done }))
+                }
+            });
+        }
+    }));
+});
+
 document.addEventListener("alpine:init", () => {
     Alpine.data("dashboardRoot", () => ({
         ...pomodoroMethods,
@@ -260,6 +377,7 @@ document.addEventListener("alpine:init", () => {
                 weatherLocation: settings.weatherLocation || "",
                 holidayCountry: settings.holidayCountry || "",
                 quoteEnabled: settings.quoteEnabled !== false,
+                tasksEnabled: settings.tasksEnabled !== false,
                 rssEnabled: settings.rssEnabled !== false,
                 rssFeeds: settings.rssFeeds || "",
                 worldClock1: WORLD_CLOCK_ZONES[settings.worldClock1] ? settings.worldClock1 : "",
@@ -337,6 +455,7 @@ document.addEventListener("alpine:init", () => {
                 weatherLocation: (f.weatherLocation || "").trim(),
                 holidayCountry: (f.holidayCountry || "").trim(),
                 quoteEnabled: !!f.quoteEnabled,
+                tasksEnabled: !!f.tasksEnabled,
                 rssEnabled: !!f.rssEnabled,
                 rssFeeds: (f.rssFeeds || "").trim(),
                 worldClock1: f.worldClock1,

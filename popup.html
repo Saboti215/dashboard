@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" href="assets/dashboard.svg">
+        <script src="./src/i18n.js"></script>
+        <script src="./src/pomodoro-logic.js"></script>
+        <script src="./src/stores.js"></script>
+        <script src="./src/pomodoro-ui.js"></script>
+        <script src="./src/popup.js"></script>
+        <link rel="stylesheet" href="src/dashboard.css">
+        <title>Dashboard</title>
+        <!-- See index.html for why this must be the CSP build, must stay the LAST script tag, and
+             needs "defer" (all scripts here sit in <head>, before <body> exists). -->
+        <script defer src="./src/alpine-csp.min.js"></script>
+    </head>
+    <!-- Toolbar popup (manifest.json's action.default_popup): Pomodoro controls + quick wellness
+         toggles, reachable from any tab without opening the New Tab dashboard. Auto-closes on
+         outside click like any browser action popup, so it stays independent of the dashboard
+         page/pomodoro.html window — same shared store/background service worker keeps everything
+         in sync regardless of which of these happen to be open. -->
+    <body class="popup-root" x-data="popupRoot" x-cloak>
+        <div id="pomodoro-panel" class="active">
+            <div class="pomodoro-header">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="pomodoro-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span id="pomodoro-phase" x-text="$store.dashboard.pomodoro.phaseLabel">Arbeiten</span>
+                <button type="button" id="pomodoro-open-window" data-i18n-title="pomodoro.openWindow" title="In eigenem Fenster öffnen" x-on:click="openPomodoroWindow">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                </button>
+            </div>
+            <div id="pomodoro-time" x-text="$store.dashboard.pomodoro.timeText">25:00</div>
+            <div id="pomodoro-round" x-text="$store.dashboard.pomodoro.roundLabel"></div>
+            <div class="pomodoro-controls">
+                <button type="button" id="pomodoro-play-pause" class="btn btn-primary" x-bind:class="$store.dashboard.pomodoroPlayPauseClass" x-text="$store.dashboard.pomodoro.playPauseLabel" x-on:click="playPause">Start</button>
+                <button type="button" id="pomodoro-skip" data-i18n-title="pomodoro.skip" title="Überspringen" x-on:click="skip">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                </button>
+                <button type="button" id="pomodoro-reset" data-i18n-title="pomodoro.reset" title="Zurücksetzen" x-on:click="reset">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Wellness quick-toggles: apply immediately (no separate save step), unlike the New Tab
+             page's Settings modal draft-form pattern — a popup that auto-closes on outside click
+             has no natural moment for a "Speichern" button. Writes go straight to
+             chrome.storage.sync, which src/background.js already watches (WELLNESS_SETTING_KEYS)
+             to resync its wellness alarms — no background.js change needed for this part. -->
+        <div class="settings-section" id="popup-wellness">
+            <h3 class="settings-section-title" data-i18n="settings.section.wellness">Wellness</h3>
+
+            <div class="form-row form-row-checkbox">
+                <input type="checkbox" id="popup-water-enabled" data-field="waterEnabled" x-bind:checked="$store.dashboard.settings.waterEnabled" x-on:change="toggleWellnessField">
+                <label for="popup-water-enabled" data-i18n="settings.waterEnabled">Wasser-Erinnerung</label>
+            </div>
+
+            <div class="form-row form-row-checkbox">
+                <input type="checkbox" id="popup-eyes-enabled" data-field="eyesEnabled" x-bind:checked="$store.dashboard.settings.eyesEnabled" x-on:change="toggleWellnessField">
+                <label for="popup-eyes-enabled" data-i18n="settings.eyesEnabled">Augen-Pause</label>
+            </div>
+
+            <div class="form-row form-row-checkbox">
+                <input type="checkbox" id="popup-desk-enabled" data-field="deskEnabled" x-bind:checked="$store.dashboard.settings.deskEnabled" x-on:change="toggleWellnessField">
+                <label for="popup-desk-enabled" data-i18n="settings.deskEnabled">Steh-Erinnerung</label>
+            </div>
+        </div>
+
+        <button type="button" id="popup-open-dashboard" class="btn btn-secondary btn-small" data-i18n="popup.openDashboard" x-on:click="openDashboard">Dashboard öffnen</button>
+    </body>
+</html>

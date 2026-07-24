@@ -46,6 +46,49 @@ async function syncAlarmWithState(state) {
     }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Toolbar badge — shows the Pomodoro countdown in whole minutes on the extension's toolbar icon,
+// so it's glanceable without opening the popup. chrome.alarms' minimum period for a recurring
+// alarm is 1 minute, which conveniently matches the badge's own minute-granularity display: a
+// dedicated alarm re-renders it once a minute while running (like POMODORO_ALARM_NAME above, this
+// keeps counting down with no page/popup open at all).
+// ---------------------------------------------------------------------------------------------
+
+const POMODORO_BADGE_ALARM_NAME = "pomodoro-badge-tick";
+const BADGE_COLOR_RUNNING = "#6366f1"; // matches --accent-color in src/dashboard.css
+const BADGE_COLOR_PAUSED = "#64748b"; // matches --text-secondary in src/dashboard.css
+
+// Stays empty for a freshly-reset/never-started phase (remainingMs still equals the full phase
+// duration) — nothing worth glancing at yet — so the badge doesn't show e.g. "25" the moment the
+// extension is installed, before the user has ever pressed Start.
+async function updateBadge(state, settings) {
+    const remainingMs = getPomodoroRemainingMs(state, Date.now());
+    const fullDurationMs = getPomodoroPhaseDurationMs(state.phase, settings);
+
+    if (!state.running && remainingMs >= fullDurationMs) {
+        await clearBadge();
+        return;
+    }
+
+    const minutes = Math.max(0, Math.ceil(remainingMs / 60000));
+    await chrome.action.setBadgeText({ text: String(minutes) });
+    await chrome.action.setBadgeBackgroundColor({
+        color: state.running ? BADGE_COLOR_RUNNING : BADGE_COLOR_PAUSED
+    });
+}
+
+async function clearBadge() {
+    await chrome.action.setBadgeText({ text: "" });
+}
+
+async function syncBadgeAlarm(state, settings) {
+    await chrome.alarms.clear(POMODORO_BADGE_ALARM_NAME);
+    if (state.running) {
+        chrome.alarms.create(POMODORO_BADGE_ALARM_NAME, { periodInMinutes: 1 });
+    }
+    await updateBadge(state, settings);
+}
+
 function notifyPhaseEnd(finishedPhase, settings) {
     setLanguage(settings.language);
     const workDone = finishedPhase === POMODORO_PHASES.WORK;
@@ -154,8 +197,17 @@ async function notifyWellness(type, settings) {
 // opts in) and on every browser startup (alarms don't persist across a full browser restart on
 // all platforms, so this re-arms them). Settings changes while already running are covered by the
 // chrome.storage.onChanged listener further down.
-chrome.runtime.onInstalled.addListener(() => { syncWellnessAlarms(); });
-chrome.runtime.onStartup.addListener(() => { syncWellnessAlarms(); });
+chrome.runtime.onInstalled.addListener(() => { syncWellnessAlarms(); initBadgeOnStartup(); });
+chrome.runtime.onStartup.addListener(() => { syncWellnessAlarms(); initBadgeOnStartup(); });
+
+// Same "alarms don't survive a full browser restart on all platforms" concern applies to the
+// badge alarm — re-arm it (or just redraw a paused/stopped badge) from whatever state was last
+// persisted, so the toolbar icon is correct immediately rather than stale until the next action.
+async function initBadgeOnStartup() {
+    const settings = await getPomodoroSettings();
+    const state = await getPomodoroState(settings);
+    await syncBadgeAlarm(state, settings);
+}
 
 const WELLNESS_SETTING_KEYS = Object.values(WELLNESS_TYPES).flatMap(({ enabledKey, intervalKey }) => [enabledKey, intervalKey]);
 
@@ -177,9 +229,17 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         const nextState = advancePomodoroPhase(state, settings);
         await savePomodoroState(nextState);
         await syncAlarmWithState(nextState);
+        await syncBadgeAlarm(nextState, settings);
 
         notifyPhaseEnd(finishedPhase, settings);
         broadcastBeep();
+        return;
+    }
+
+    if (alarm.name === POMODORO_BADGE_ALARM_NAME) {
+        const settings = await getPomodoroSettings();
+        const state = await getPomodoroState(settings);
+        await updateBadge(state, settings);
         return;
     }
 
@@ -205,6 +265,8 @@ async function handlePomodoroMessage(type) {
     if (type === "pomodoro:disable") {
         // The feature was turned off in Settings — stop ticking towards a notification nobody wants.
         await chrome.alarms.clear(POMODORO_ALARM_NAME);
+        await chrome.alarms.clear(POMODORO_BADGE_ALARM_NAME);
+        await clearBadge();
         return;
     }
 
@@ -232,4 +294,5 @@ async function handlePomodoroMessage(type) {
 
     await savePomodoroState(nextState);
     await syncAlarmWithState(nextState);
+    await syncBadgeAlarm(nextState, settings);
 }
