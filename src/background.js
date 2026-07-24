@@ -16,6 +16,11 @@ importScripts("i18n.js", "pomodoro-logic.js");
 
 const POMODORO_ALARM_NAME = "pomodoro";
 
+// chrome.notifications can't decode SVG icons (the create() call silently fails with "Unable to
+// download all specified images" and no notification ever appears), so this points at one of the
+// packaged raster icons instead of assets/dashboard.svg.
+const NOTIFICATION_ICON = chrome.runtime.getURL("assets/icon-128.png");
+
 const POMODORO_SETTINGS_DEFAULTS = {
     language: detectDefaultLanguage(),
     pomodoroWorkMinutes: 25,
@@ -95,7 +100,7 @@ function notifyPhaseEnd(finishedPhase, settings) {
 
     chrome.notifications.create(`pomodoro-${Date.now()}`, {
         type: "basic",
-        iconUrl: chrome.runtime.getURL("assets/dashboard.svg"),
+        iconUrl: NOTIFICATION_ICON,
         title: t(workDone ? "pomodoro.notify.workDoneTitle" : "pomodoro.notify.breakDoneTitle"),
         message: t(workDone ? "pomodoro.notify.workDoneBody" : "pomodoro.notify.breakDoneBody"),
         priority: 1
@@ -175,7 +180,7 @@ async function notifyWellness(type, settings) {
 
         chrome.notifications.create(`wellness-desk-${Date.now()}`, {
             type: "basic",
-            iconUrl: chrome.runtime.getURL("assets/dashboard.svg"),
+            iconUrl: NOTIFICATION_ICON,
             title: t(standNext ? "wellness.desk.stand.title" : "wellness.desk.sit.title"),
             message: t(standNext ? "wellness.desk.stand.body" : "wellness.desk.sit.body"),
             priority: 1
@@ -185,7 +190,7 @@ async function notifyWellness(type, settings) {
 
     chrome.notifications.create(`wellness-${type}-${Date.now()}`, {
         type: "basic",
-        iconUrl: chrome.runtime.getURL("assets/dashboard.svg"),
+        iconUrl: NOTIFICATION_ICON,
         title: t(`wellness.${type}.title`),
         message: t(`wellness.${type}.body`),
         priority: 1
