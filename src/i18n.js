@@ -94,7 +94,12 @@ const TRANSLATIONS = {
         },
         radio: {
             panelTitle: "TuneIn Radio",
-            toggleTitle: "Radio-Player"
+            toggleTitle: "Musik-Player",
+            tab: "TuneIn"
+        },
+        spotify: {
+            panelTitle: "Spotify",
+            tab: "Spotify"
         },
         pomodoro: {
             toggleTitle: "Pomodoro-Timer",
@@ -163,6 +168,7 @@ const TRANSLATIONS = {
                 rss: "News",
                 worldClock: "Weltuhr",
                 radio: "Radio",
+                spotify: "Spotify",
                 meetings: "Meetings",
                 pomodoro: "Pomodoro",
                 wellness: "Wellness"
@@ -192,6 +198,9 @@ const TRANSLATIONS = {
             radioEnabled: "Radio-Player anzeigen",
             tuneInId: "TuneIn Sender-ID",
             tuneInHint: "Die Sender-ID aus der URL eines TuneIn-Senders, z. B. \"s34682\" aus tunein.com/radio/.../s34682.",
+            spotifyEnabled: "Spotify-Player anzeigen",
+            spotifyUri: "Spotify-Link oder ID",
+            spotifyHint: "Link, URI oder ID zu Playlist, Album, Titel oder Künstler, z. B. https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M.",
             meetingsEnabled: "Meeting Quick-Join anzeigen",
             pomodoroEnabled: "Pomodoro-Timer anzeigen",
             pomodoroWork: "Arbeitsdauer (Min.)",
@@ -286,7 +295,12 @@ const TRANSLATIONS = {
         },
         radio: {
             panelTitle: "TuneIn Radio",
-            toggleTitle: "Radio Player"
+            toggleTitle: "Music player",
+            tab: "TuneIn"
+        },
+        spotify: {
+            panelTitle: "Spotify",
+            tab: "Spotify"
         },
         pomodoro: {
             toggleTitle: "Pomodoro timer",
@@ -355,6 +369,7 @@ const TRANSLATIONS = {
                 rss: "News",
                 worldClock: "World clock",
                 radio: "Radio",
+                spotify: "Spotify",
                 meetings: "Meetings",
                 pomodoro: "Pomodoro",
                 wellness: "Wellness"
@@ -384,6 +399,9 @@ const TRANSLATIONS = {
             radioEnabled: "Show radio player",
             tuneInId: "TuneIn station ID",
             tuneInHint: "The station ID from a TuneIn station's URL, e.g. \"s34682\" from tunein.com/radio/.../s34682.",
+            spotifyEnabled: "Show Spotify player",
+            spotifyUri: "Spotify link or ID",
+            spotifyHint: "A link, URI, or ID for a playlist, album, track, or artist, e.g. https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M.",
             meetingsEnabled: "Show meeting quick-join",
             pomodoroEnabled: "Show Pomodoro timer",
             pomodoroWork: "Focus duration (min)",

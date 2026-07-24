@@ -212,20 +212,26 @@
             </div>
         </div>
 
-        <!-- Floating Music Player Widget. Hidden entirely (feature-hidden) when disabled in Settings. -->
-        <div id="radio-panel" x-bind:class="$store.dashboard.radioClass">
+        <!-- Floating Music Player Widget. Hidden entirely (feature-hidden) when neither source is
+             enabled in Settings. Shows a TuneIn/Spotify tab switcher when both sources are configured,
+             otherwise just the panel title of whichever one is active. -->
+        <div id="radio-panel" x-bind:class="$store.dashboard.playerClass">
             <div class="radio-header">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="radio-icon">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
-                <span data-i18n="radio.panelTitle">TuneIn Radio</span>
+                <span x-show="!$store.dashboard.playerSwitcherVisible" x-text="$store.dashboard.playerTitle">TuneIn Radio</span>
+                <div class="segmented player-tabs" x-show="$store.dashboard.playerSwitcherVisible">
+                    <button type="button" data-source="tunein" x-bind:class="$store.dashboard.tuneinTabClass" x-on:click="setPlayerSource" data-i18n="radio.tab">TuneIn</button>
+                    <button type="button" data-source="spotify" x-bind:class="$store.dashboard.spotifyTabClass" x-on:click="setPlayerSource" data-i18n="spotify.tab">Spotify</button>
+                </div>
             </div>
             <div class="radio-content">
-                <iframe id="radio-frame" scrolling="no" frameborder="no" x-bind:src="$store.dashboard.radioFrameSrc"></iframe>
+                <iframe id="radio-frame" scrolling="no" frameborder="no" allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture" x-bind:src="$store.dashboard.playerFrameSrc"></iframe>
             </div>
         </div>
 
-        <button id="radio-toggle" data-i18n-title="radio.toggleTitle" title="Radio Player" x-bind:class="$store.dashboard.radioClass" x-on:click="toggleRadioPanel">
+        <button id="radio-toggle" data-i18n-title="radio.toggleTitle" title="Musik-Player" x-bind:class="$store.dashboard.playerClass" x-on:click="toggleRadioPanel">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
@@ -650,6 +656,29 @@
                                     </button>
                                 </label>
                                 <input type="text" id="settings-tunein-id" placeholder="s12345" data-field="tuneInId" x-bind:value="settingsForm.tuneInId" x-on:input="updateSettingsField">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title" data-i18n="settings.section.spotify">Spotify</h3>
+
+                        <div class="form-row form-row-checkbox">
+                            <input type="checkbox" id="settings-spotify-enabled" data-field="spotifyEnabled" x-bind:checked="settingsForm.spotifyEnabled" x-on:change="updateSettingsField">
+                            <label for="settings-spotify-enabled" data-i18n="settings.spotifyEnabled">Spotify-Player anzeigen</label>
+                        </div>
+
+                        <div class="settings-subfields" id="settings-spotify-details" x-show="settingsForm.spotifyEnabled">
+                            <div class="form-row">
+                                <label for="settings-spotify-uri">
+                                    <span data-i18n="settings.spotifyUri">Spotify-Link oder ID</span>
+                                    <button type="button" class="info-icon" tabindex="-1" data-i18n-title="settings.spotifyHint" title='Link, URI oder ID zu Playlist, Album, Titel oder Künstler, z. B. https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M.'>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </button>
+                                </label>
+                                <input type="text" id="settings-spotify-uri" placeholder="open.spotify.com/playlist/..." data-field="spotifyUri" x-bind:value="settingsForm.spotifyUri" x-on:input="updateSettingsField">
                             </div>
                         </div>
                     </div>

@@ -341,6 +341,10 @@ document.addEventListener("alpine:init", () => {
             this.$store.dashboard.toggleRadioPanel();
         },
 
+        setPlayerSource(event) {
+            this.$store.dashboard.setPlayerSource(event);
+        },
+
         togglePomodoroPanel() {
             this.$store.dashboard.togglePomodoroPanel();
         },
@@ -384,6 +388,8 @@ document.addEventListener("alpine:init", () => {
                 worldClock2: WORLD_CLOCK_ZONES[settings.worldClock2] ? settings.worldClock2 : "",
                 radioEnabled: settings.radioEnabled !== false,
                 tuneInId: settings.tuneInId || "",
+                spotifyEnabled: settings.spotifyEnabled !== false,
+                spotifyUri: settings.spotifyUri || "",
                 meetingsEnabled: settings.meetingsEnabled !== false,
                 pomodoroEnabled: settings.pomodoroEnabled !== false,
                 pomodoroWorkMinutes: settings.pomodoroWorkMinutes || 25,
@@ -462,6 +468,8 @@ document.addEventListener("alpine:init", () => {
                 worldClock2: f.worldClock2,
                 tuneInId: (f.tuneInId || "").trim(),
                 radioEnabled: !!f.radioEnabled,
+                spotifyUri: (f.spotifyUri || "").trim(),
+                spotifyEnabled: !!f.spotifyEnabled,
                 meetingsEnabled: !!f.meetingsEnabled,
                 pomodoroEnabled: !!f.pomodoroEnabled,
                 pomodoroWorkMinutes: Number(f.pomodoroWorkMinutes) || 25,

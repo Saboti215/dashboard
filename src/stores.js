@@ -98,6 +98,18 @@ function copyToClipboard(str) {
     document.body.removeChild(el);
 }
 
+// Parses a Spotify playlist/album/track/artist/episode/show reference out of a full URL, an
+// "intl-xx/"-prefixed URL, a spotify: URI, an embed URL, or a bare ID — so the settings field
+// accepts whatever the user happens to paste from the Spotify app or website.
+function parseSpotifyEmbed(raw) {
+    const input = (raw || "").trim();
+    if (!input) return null;
+    const match = input.match(/(playlist|album|track|artist|episode|show)[/:]([A-Za-z0-9]+)/i);
+    if (match) return { type: match[1].toLowerCase(), id: match[2] };
+    if (/^[A-Za-z0-9]{22}$/.test(input)) return { type: "playlist", id: input };
+    return null;
+}
+
 function getDefaultSettings() {
     return {
         language: detectDefaultLanguage(), // from i18n.js; falls back to the browser's language
@@ -117,6 +129,8 @@ function getDefaultSettings() {
         worldClock2: "",
         tuneInId: "",
         radioEnabled: true,
+        spotifyUri: "",
+        spotifyEnabled: true,
         meetingsEnabled: true,
         pomodoroEnabled: true,
         pomodoroWorkMinutes: 25,
@@ -173,6 +187,7 @@ document.addEventListener("alpine:init", () => {
 
         ui: {
             radioPanelOpen: false,
+            playerSource: "tunein", // which source the music panel is currently showing: "tunein" | "spotify"
             pomodoroPanelOpen: false,
             meetingsModalOpen: false,
             settingsModalOpen: false
@@ -181,6 +196,24 @@ document.addEventListener("alpine:init", () => {
         // ---- feature-enabled getters (derived from settings) ----------------------------------
         get radioEnabled() {
             return this.settings.radioEnabled !== false && !!this.settings.tuneInId;
+        },
+        get spotifyEnabled() {
+            return this.settings.spotifyEnabled !== false && !!parseSpotifyEmbed(this.settings.spotifyUri);
+        },
+        // Whether the shared music panel/toggle should show at all — true if either source is configured.
+        get playerEnabled() {
+            return this.radioEnabled || this.spotifyEnabled;
+        },
+        // Which source the panel actually renders: honors the user's tab pick if that source is
+        // still enabled, otherwise falls back to whichever source is enabled.
+        get activePlayerSource() {
+            if (this.ui.playerSource === "spotify" && this.spotifyEnabled) return "spotify";
+            if (this.ui.playerSource === "tunein" && this.radioEnabled) return "tunein";
+            return this.radioEnabled ? "tunein" : "spotify";
+        },
+        // Only show the TuneIn/Spotify tab switcher once both sources are actually available.
+        get playerSwitcherVisible() {
+            return this.radioEnabled && this.spotifyEnabled;
         },
         get pomodoroEnabled() {
             const hasChrome = typeof chrome !== "undefined" && chrome.storage && chrome.runtime;
@@ -236,8 +269,22 @@ document.addEventListener("alpine:init", () => {
 
         // ---- class-object getters ("no inline object literals/operators in directives" under
         // the CSP build means every load-bearing class combination needs its own named getter) --
-        get radioClass() {
-            return { "feature-hidden": !this.radioEnabled, active: this.ui.radioPanelOpen };
+        get playerClass() {
+            return {
+                "feature-hidden": !this.playerEnabled,
+                active: this.ui.radioPanelOpen,
+                "player-spotify": this.activePlayerSource === "spotify"
+            };
+        },
+        get playerTitle() {
+            void this.lang;
+            return this.activePlayerSource === "spotify" ? t("spotify.panelTitle") : t("radio.panelTitle");
+        },
+        get tuneinTabClass() {
+            return { active: this.activePlayerSource === "tunein" };
+        },
+        get spotifyTabClass() {
+            return { active: this.activePlayerSource === "spotify" };
         },
         get pomodoroPanelClass() {
             return { "feature-hidden": !this.pomodoroEnabled, active: this.ui.pomodoroPanelOpen };
@@ -331,6 +378,21 @@ document.addEventListener("alpine:init", () => {
         // ---- radio (TuneIn embed) --------------------------------------------------------------
         get radioFrameSrc() {
             return this.settings.tuneInId ? `https://tunein.com/embed/player/s${this.settings.tuneInId}/` : "";
+        },
+
+        // ---- spotify embed -----------------------------------------------------------------------
+        get spotifyFrameSrc() {
+            const parsed = parseSpotifyEmbed(this.settings.spotifyUri);
+            return parsed ? `https://open.spotify.com/embed/${parsed.type}/${parsed.id}?utm_source=generator` : "";
+        },
+
+        // ---- shared music panel (single iframe; only the active source's src is ever set, so
+        // there's never double playback) ------------------------------------------------------
+        get playerFrameSrc() {
+            return this.activePlayerSource === "spotify" ? this.spotifyFrameSrc : this.radioFrameSrc;
+        },
+        setPlayerSource(event) {
+            this.ui.playerSource = event.target.dataset.source;
         },
         toggleRadioPanel() {
             this.ui.radioPanelOpen = !this.ui.radioPanelOpen;

@@ -877,6 +877,26 @@ body.zen-mode #dashboard.no-calendar .left-column {
     transform: translateY(0) scale(1);
 }
 
+/* Spotify requires the iframe itself to be at least 352px tall for the full tracklist view,
+   or it squeezes/overlaps its own controls. #radio-content only gets the panel height minus
+   the header row, vertical padding (15px * 2) and the flex gap (10px) — so the panel needs
+   roughly 352 + 70px of chrome to give the iframe enough room. */
+#radio-panel.player-spotify {
+    height: 440px;
+}
+
+/* Compact override of the shared .segmented control (see #recurrence-toggle) so the
+   TuneIn/Spotify switch fits inline in the panel header instead of filling a form row. */
+.radio-header .player-tabs {
+    padding: 2px;
+    gap: 2px;
+}
+
+.radio-header .player-tabs button {
+    padding: 3px 10px;
+    font-size: 12px;
+}
+
 .radio-header {
     display: flex;
     align-items: center;
