@@ -493,23 +493,15 @@ body.zen-mode #dashboard.no-calendar .left-column {
     min-height: 120px;
 }
 
+/* Two columns of categories, always — falls back to one column in the portrait media query
+   below, where there isn't width to spare. */
 #apps-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-/* Without a calendar, Bookmarks spans the full width (see #dashboard.no-calendar #apps-container
-   above), which otherwise stretches a single column of categories thin. Lay categories out in two
-   columns instead so the extra width is used; falls back to one column again in the portrait
-   media query below, where there isn't width to spare. */
-#dashboard.no-calendar #apps-wrapper {
     display: grid;
     grid-template-columns: 1fr 1fr;
     align-content: start;
     gap: 25px;
+    overflow-y: auto;
+    padding-right: 5px;
 }
 
 /* Custom Scrollbar for Apps list */
@@ -1881,7 +1873,7 @@ body.zen-mode #settings-toggle {
         grid-template-rows: none;
     }
 
-    #dashboard.no-calendar #apps-wrapper {
+    #apps-wrapper {
         grid-template-columns: 1fr;
     }
 
