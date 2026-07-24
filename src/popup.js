@@ -5,9 +5,20 @@
  * popup that closes on outside click has no natural moment for one.
  */
 
+// Maps each wellness type to the chrome.alarms name background.js schedules it under (its
+// WELLNESS_TYPES). Duplicated here rather than shared, same rationale as hexToRgba below — not
+// worth a shared file for three name strings.
+const WELLNESS_ALARM_NAMES = {
+    water: "wellness-water",
+    eyes: "wellness-eyes",
+    desk: "wellness-desk"
+};
+
 document.addEventListener("alpine:init", () => {
     Alpine.data("popupRoot", () => ({
         ...pomodoroMethods,
+
+        wellnessNext: { water: "", eyes: "", desk: "" },
 
         init() {
             const store = this.$store.dashboard;
@@ -17,6 +28,32 @@ document.addEventListener("alpine:init", () => {
                 applyStaticTranslations();
                 this.applyAccentColor(settings.accentColor);
                 installPomodoroSync(store);
+
+                this.refreshWellnessNext();
+                window.setInterval(() => this.refreshWellnessNext(), 10000);
+            });
+        },
+
+        // Reads each wellness reminder's scheduled chrome.alarms fire time and renders it as a
+        // "in N Min." countdown; empty string (renders nothing) while a reminder is off, since
+        // background.js clears its alarm the moment it's disabled.
+        refreshWellnessNext() {
+            if (typeof chrome === "undefined" || !chrome.alarms) return;
+
+            chrome.alarms.getAll(alarms => {
+                const alarmsByName = {};
+                alarms.forEach(alarm => { alarmsByName[alarm.name] = alarm; });
+
+                Object.keys(WELLNESS_ALARM_NAMES).forEach(type => {
+                    const alarm = alarmsByName[WELLNESS_ALARM_NAMES[type]];
+                    if (!alarm) {
+                        this.wellnessNext[type] = "";
+                        return;
+                    }
+
+                    const minutes = Math.max(1, Math.ceil((alarm.scheduledTime - Date.now()) / 60000));
+                    this.wellnessNext[type] = t("wellness.nextIn", { minutes });
+                });
             });
         },
 
@@ -36,6 +73,10 @@ document.addEventListener("alpine:init", () => {
 
             store.settings[field] = el.checked;
             store.saveSettings({ [field]: el.checked });
+
+            // background.js resyncs its alarm asynchronously off the storage write above, so give
+            // it a moment before reading the new (or now-cleared) scheduled time back.
+            window.setTimeout(() => this.refreshWellnessNext(), 300);
         },
 
         openDashboard() {

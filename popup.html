@@ -61,16 +61,19 @@
             <div class="form-row form-row-checkbox">
                 <input type="checkbox" id="popup-water-enabled" data-field="waterEnabled" x-bind:checked="$store.dashboard.settings.waterEnabled" x-on:change="toggleWellnessField">
                 <label for="popup-water-enabled" data-i18n="settings.waterEnabled">Wasser-Erinnerung</label>
+                <span class="wellness-next" x-text="wellnessNext.water"></span>
             </div>
 
             <div class="form-row form-row-checkbox">
                 <input type="checkbox" id="popup-eyes-enabled" data-field="eyesEnabled" x-bind:checked="$store.dashboard.settings.eyesEnabled" x-on:change="toggleWellnessField">
                 <label for="popup-eyes-enabled" data-i18n="settings.eyesEnabled">Augen-Pause</label>
+                <span class="wellness-next" x-text="wellnessNext.eyes"></span>
             </div>
 
             <div class="form-row form-row-checkbox">
                 <input type="checkbox" id="popup-desk-enabled" data-field="deskEnabled" x-bind:checked="$store.dashboard.settings.deskEnabled" x-on:change="toggleWellnessField">
                 <label for="popup-desk-enabled" data-i18n="settings.deskEnabled">Steh-Erinnerung</label>
+                <span class="wellness-next" x-text="wellnessNext.desk"></span>
             </div>
         </div>
 

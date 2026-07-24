@@ -90,7 +90,8 @@ const TRANSLATIONS = {
                     title: "Zeit zum Stehen",
                     body: "Wechsle in die Stehposition."
                 }
-            }
+            },
+            nextIn: "in {minutes} Min."
         },
         radio: {
             panelTitle: "TuneIn Radio",
@@ -291,7 +292,8 @@ const TRANSLATIONS = {
                     title: "Time to stand",
                     body: "Switch to standing."
                 }
-            }
+            },
+            nextIn: "in {minutes} min"
         },
         radio: {
             panelTitle: "TuneIn Radio",

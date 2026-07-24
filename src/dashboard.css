@@ -1622,6 +1622,15 @@ body.zen-mode #settings-toggle {
     cursor: pointer;
 }
 
+/* Countdown to a wellness reminder's next alarm (popup.html only); empty/collapsed while the
+   reminder is disabled since wellnessNext.<type> is "" in that case. */
+.wellness-next {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
 /* Native color picker, styled to fit the glass aesthetic */
 .form-row input[type="color"] {
     padding: 4px;
